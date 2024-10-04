@@ -1,0 +1,10 @@
+# Goal
+string map_filepath
+
+---
+# Result
+bool success
+
+---
+# Feedback
+string progress_message
