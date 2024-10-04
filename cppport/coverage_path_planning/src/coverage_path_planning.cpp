@@ -55,9 +55,6 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
       RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
 
-      CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.01);
-      int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
-
       double min_z = std::numeric_limits<double>::max();
 
       for (auto v : vertices(mesh)) {
@@ -77,6 +74,9 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       }
 
       CGAL::Euler::remove_face(hr, mesh);
+
+      CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.01);
+      int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
 
       mesh.collect_garbage();
 
