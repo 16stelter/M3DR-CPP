@@ -66,20 +66,20 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
               min_z = z;
           }
       }
-      for (auto f : faces(mesh)) {
-        bool rm = false;
-        CGAL::Vertex_around_face_iterator<Mesh> vbegin, vend;
-        for (boost::tie(vbegin, vend) = CGAL::vertices_around_face(mesh.halfedge(f), mesh);
-                vbegin != vend;
-                ++vbegin) {
-          if (std::abs(mesh.point(*vbegin).z() - min_z) < 10) {
-            mesh.remove_vertex(*vbegin);
-            mesh.remove_face(f);
-            break;
-          }
+
+      Mesh::Halfedge_index  hr; 
+      for (auto v : vertices(mesh)) {
+        if(abs(mesh.point(v).z() - min_z) < 1e-2)
+        {
+          Mesh::Halfedge_index  h = halfedge(v, mesh);
+          hr = CGAL::Euler::remove_center_vertex(h, mesh);
         }
       }
+
+      CGAL::Euler::remove_face(hr, mesh);
+
       mesh.collect_garbage();
+
 
 
       RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());

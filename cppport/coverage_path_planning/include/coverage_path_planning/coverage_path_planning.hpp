@@ -11,6 +11,7 @@
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_count_ratio_stop_predicate.h>
 #include <CGAL/draw_surface_mesh.h>
+#include <CGAL/boost/graph/Euler_operations.h>
 
 #include <vector>
 #include <iostream>
