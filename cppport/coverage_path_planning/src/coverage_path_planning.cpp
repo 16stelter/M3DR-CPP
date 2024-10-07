@@ -44,12 +44,12 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     auto result = std::make_shared<CoverageAction::Result>();
 
     std::string map_filepath = goal->map_filepath;
+    Mesh mesh;
 
     try 
     {
       std::ifstream stl_file(map_filepath, std::ifstream::in);
 
-      Mesh mesh;
       CGAL::IO::read_STL(stl_file, mesh);
       stl_file.close();
 
@@ -79,26 +79,52 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
 
       mesh.collect_garbage();
-
-
-
-      RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());
-
-      CGAL::draw(mesh); // visualization for debug
-
-      std::ofstream out("output_mesh.off");
-      out << mesh;
-      out.close();
-      result->success = true;
-      RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", map_filepath.c_str());
     }
     catch (const char* msg) 
     {
       RCLCPP_INFO(node_->get_logger(), "Exception: %s", msg);
       result->success = false;
     }
-    
+
+    auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
+    auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); 
+
+    // add color map to the mesh to visualize different regions later
+
+    RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());
+    CGAL::draw(mesh); // visualization for debug
+
+    std::ofstream out("output_mesh.off");
+    out << mesh;
+    out.close();
+    result->success = true;
+    RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", map_filepath.c_str());
+
     goal_handle->succeed(result);
+}
+
+std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> CoveragePathPlanning::face_safety(Mesh& mesh, double threshold, Mesh::Property_map<Mesh::Face_index, CGAL::Color>& colormap)
+{
+    std::vector<Mesh::Face_index> fsafe;
+    std::vector<Mesh::Face_index> fobstacle;
+
+    for (auto f : mesh.faces())
+    {
+      Vector normal = CGAL::Polygon_mesh_processing::compute_face_normal(f, mesh);
+      double angle = std::acos(normal.z()) * 180 / M_PI;
+      
+      if (angle < 15)
+      {
+        colormap[f] = CGAL::Color(0, 255, 0);
+        fsafe.push_back(f);
+      }
+      else
+      {
+        colormap[f] = CGAL::Color(255, 0, 0);
+        fobstacle.push_back(f);
+      }
+    }
+    return {fsafe, fobstacle};
 }
 
 } // namespace coverage_path_planning

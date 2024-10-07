@@ -12,6 +12,9 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_count_ratio_stop_predicate.h>
 #include <CGAL/draw_surface_mesh.h>
 #include <CGAL/boost/graph/Euler_operations.h>
+#include <CGAL/boost/graph/properties.h>
+#include <CGAL/IO/Color.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
 #include <vector>
 #include <iostream>
@@ -24,6 +27,7 @@ typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_3                                        Point;
 typedef CGAL::Delaunay_triangulation_3<K>                 Delaunay;
 typedef CGAL::Surface_mesh<Point>                         Mesh;
+typedef K::Vector_3 Vector;
 
 class CoveragePathPlanning {
     public:
@@ -39,6 +43,7 @@ class CoveragePathPlanning {
         rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandleCoverageAction> goal_handle);
         void handle_accepted(const std::shared_ptr<GoalHandleCoverageAction> goal_handle);
         void execute(const std::shared_ptr<GoalHandleCoverageAction> goal_handle);
+        std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> face_safety(Mesh& mesh, double threshold, Mesh::Property_map<Mesh::Face_index, CGAL::Color>& colormap);
 
         void simplify_mesh(Mesh& mesh); 
 };
