@@ -88,11 +88,19 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
     auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); 
+    auto cen = get_centroids(mesh, fsafe);
 
     // add color map to the mesh to visualize different regions later
 
     RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());
-    CGAL::draw(mesh); // visualization for debug
+
+    CGAL::Graphics_scene scene; // visualization for debug
+    CGAL::add_to_graphics_scene(mesh, scene);
+    for (const auto& point : cen.points()) {
+      RCLCPP_INFO(node_->get_logger(), "Point: (%f, %f, %f)", point.x(), point.y(), point.z());
+      scene.add_text(point, "x");
+    }
+    CGAL::draw_graphics_scene(scene);
 
     std::ofstream out("output_mesh.off");
     out << mesh;
@@ -125,6 +133,24 @@ std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> Coverage
       }
     }
     return {fsafe, fobstacle};
+}
+
+CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> fsafe)
+{
+  CGAL::Point_set_3<Point> cen;
+  for (auto f : fsafe)
+  {
+    auto h = mesh.halfedge(f);
+
+    Point v1 = mesh.point(mesh.target(h));
+    Point v2 = mesh.point(mesh.target(mesh.next(h)));
+    Point v3 = mesh.point(mesh.target(mesh.next(mesh.next(h))));
+
+    Point centroid = CGAL::centroid(v1, v2, v3);
+
+    cen.insert(centroid);
+  }
+  return cen;
 }
 
 } // namespace coverage_path_planning
