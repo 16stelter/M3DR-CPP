@@ -14,6 +14,7 @@
 #include <CGAL/boost/graph/Euler_operations.h>
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Polygon_mesh_processing/connected_components.h>
 
 #include <CGAL/draw_surface_mesh.h>
 #include <CGAL/draw_point_set_3.h>
@@ -63,6 +64,8 @@ class CoveragePathPlanning {
         void execute(const std::shared_ptr<GoalHandleCoverageAction> goal_handle);
         std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> face_safety(Mesh& mesh, double threshold, Mesh::Property_map<Mesh::Face_index, CGAL::Color>& colormap);
         CGAL::Point_set_3<Point> get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> fsafe);
+        std::vector<std::vector<Mesh::Face_index>> get_connected_components(Mesh& mesh, std::vector<Mesh::Face_index> fsafe);
+
 
         void simplify_mesh(Mesh& mesh); 
 };

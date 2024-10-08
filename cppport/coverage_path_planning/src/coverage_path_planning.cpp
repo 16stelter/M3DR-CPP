@@ -1,5 +1,6 @@
 #include "coverage_path_planning/coverage_path_planning.hpp"
 
+namespace PMP = CGAL::Polygon_mesh_processing;
 namespace coverage_path_planning {
 
 CoveragePathPlanning::CoveragePathPlanning(rclcpp::Node::SharedPtr node, 
@@ -89,6 +90,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
     auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); 
     auto cen = get_centroids(mesh, fsafe);
+    auto components = get_connected_components(mesh, fsafe);
 
     // add color map to the mesh to visualize different regions later
 
@@ -98,7 +100,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     CGAL::add_to_graphics_scene(mesh, scene);
     for (const auto& point : cen.points()) {
       RCLCPP_INFO(node_->get_logger(), "Point: (%f, %f, %f)", point.x(), point.y(), point.z());
-      scene.add_text(point, "x");
+      scene.add_text(point, "x"); // weirdly, drawing points doesnt work so we do text instead
     }
     CGAL::draw_graphics_scene(scene);
 
@@ -151,6 +153,47 @@ CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::ve
     cen.insert(centroid);
   }
   return cen;
+}
+
+std::vector<std::vector<Mesh::Face_index>> CoveragePathPlanning::get_connected_components(Mesh& mesh, std::vector<Mesh::Face_index> fsafe)
+{
+  Mesh msafe;
+  std::map<Point, Mesh::Vertex_index> vertex_map;
+
+  for (const auto& f : fsafe) {
+    auto h = mesh.halfedge(f);
+    std::vector<Mesh::Vertex_index> vs;
+
+    for (int i = 0; i < 3; ++i) {
+      Point p = mesh.point(mesh.target(h));
+      auto it = vertex_map.find(p);
+      if (it == vertex_map.end()) {
+        Mesh::Vertex_index idx = msafe.add_vertex(p);
+        vertex_map[p] = idx;
+      }
+      vs.push_back(vertex_map[p]);
+      h = mesh.next(h); 
+    }
+    msafe.add_face(vs);
+  }
+
+  //CGAL::draw(msafe); //Debug
+  
+  std::vector<std::size_t> components(num_faces(msafe));
+  auto fcm = boost::make_iterator_property_map(components.begin(), get(boost::face_index, msafe));
+
+  std::size_t num_components = CGAL::Polygon_mesh_processing::connected_components(msafe, fcm);
+
+  RCLCPP_INFO(node_->get_logger(), "Connected components: %zu", num_components);
+
+  for (const auto& f : faces(msafe)) {
+      RCLCPP_INFO(node_->get_logger(), "Face %d is in component %zu", f.idx(), components[f]);
+  }
+
+
+
+  std::vector<std::vector<Mesh::Face_index>> map;
+  return map;
 }
 
 } // namespace coverage_path_planning
