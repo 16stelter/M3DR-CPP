@@ -89,19 +89,22 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
     auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); 
-    auto cen = get_centroids(mesh, fsafe);
-    auto components = get_connected_components(mesh, fsafe);
+    Mesh msafe = get_sub_mesh(mesh, fsafe);
+    auto components = get_connected_components(msafe);
 
-    // add color map to the mesh to visualize different regions later
+    CGAL::Graphics_scene scene; // visualization for debug
+    for (const auto& c : components) {
+      auto cen = get_centroids(msafe, c);
+      for (const auto& point : cen.points()) {
+        //  RCLCPP_INFO(node_->get_logger(), "Point: (%f, %f, %f)", point.x(), point.y(), point.z());
+        scene.add_text(point, "x"); // weirdly, drawing points doesnt work so we do text instead
+      }
+    }
 
     RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());
 
-    CGAL::Graphics_scene scene; // visualization for debug
+    
     CGAL::add_to_graphics_scene(mesh, scene);
-    for (const auto& point : cen.points()) {
-      RCLCPP_INFO(node_->get_logger(), "Point: (%f, %f, %f)", point.x(), point.y(), point.z());
-      scene.add_text(point, "x"); // weirdly, drawing points doesnt work so we do text instead
-    }
     CGAL::draw_graphics_scene(scene);
 
     std::ofstream out("output_mesh.off");
@@ -137,6 +140,30 @@ std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> Coverage
     return {fsafe, fobstacle};
 }
 
+Mesh CoveragePathPlanning::get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index> faces)
+{
+  Mesh subm;
+  std::map<Point, Mesh::Vertex_index> vertex_map;
+
+  for (const auto& f : faces) {
+    auto h = mesh.halfedge(f);
+    std::vector<Mesh::Vertex_index> vs;
+
+    for (int i = 0; i < 3; ++i) {
+      Point p = mesh.point(mesh.target(h));
+      auto it = vertex_map.find(p);
+      if (it == vertex_map.end()) {
+        Mesh::Vertex_index idx = subm.add_vertex(p);
+        vertex_map[p] = idx;
+      }
+      vs.push_back(vertex_map[p]);
+      h = mesh.next(h); 
+    }
+    subm.add_face(vs);
+  }
+  return subm;
+}
+
 CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> fsafe)
 {
   CGAL::Point_set_3<Point> cen;
@@ -155,44 +182,25 @@ CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::ve
   return cen;
 }
 
-std::vector<std::vector<Mesh::Face_index>> CoveragePathPlanning::get_connected_components(Mesh& mesh, std::vector<Mesh::Face_index> fsafe)
-{
-  Mesh msafe;
-  std::map<Point, Mesh::Vertex_index> vertex_map;
+std::vector<std::vector<Mesh::Face_index>> CoveragePathPlanning::get_connected_components(Mesh& mesh)
+{  
+  std::vector<std::size_t> components(num_faces(mesh));
+  auto fcm = boost::make_iterator_property_map(components.begin(), get(boost::face_index, mesh));
 
-  for (const auto& f : fsafe) {
-    auto h = mesh.halfedge(f);
-    std::vector<Mesh::Vertex_index> vs;
-
-    for (int i = 0; i < 3; ++i) {
-      Point p = mesh.point(mesh.target(h));
-      auto it = vertex_map.find(p);
-      if (it == vertex_map.end()) {
-        Mesh::Vertex_index idx = msafe.add_vertex(p);
-        vertex_map[p] = idx;
-      }
-      vs.push_back(vertex_map[p]);
-      h = mesh.next(h); 
-    }
-    msafe.add_face(vs);
-  }
-
-  //CGAL::draw(msafe); //Debug
-  
-  std::vector<std::size_t> components(num_faces(msafe));
-  auto fcm = boost::make_iterator_property_map(components.begin(), get(boost::face_index, msafe));
-
-  std::size_t num_components = CGAL::Polygon_mesh_processing::connected_components(msafe, fcm);
+  std::size_t num_components = CGAL::Polygon_mesh_processing::connected_components(mesh, fcm);
 
   RCLCPP_INFO(node_->get_logger(), "Connected components: %zu", num_components);
 
-  for (const auto& f : faces(msafe)) {
-      RCLCPP_INFO(node_->get_logger(), "Face %d is in component %zu", f.idx(), components[f]);
-  }
-
-
-
   std::vector<std::vector<Mesh::Face_index>> map;
+  for (int i = 0; static_cast<long unsigned int>(i) < num_components; i++)
+  {
+    std::vector<Mesh::Face_index> v;
+    map.push_back(v);
+  }
+  for (const auto& f: faces(mesh)) 
+  {
+    map[components[f]].push_back(f);
+  }
   return map;
 }
 

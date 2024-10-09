@@ -1,5 +1,5 @@
-#ifndef BITBOTS_DYNUP_INCLUDE_BITBOTS_DYNUP_DYNUP_NODE_H_
-#define BITBOTS_DYNUP_INCLUDE_BITBOTS_DYNUP_DYNUP_NODE_H_
+#ifndef COVERAGE_PATH_PLANNING_INCLUDE_COVERAGE_PATH_PLANNING_H_
+#define COVERAGE_PATH_PLANNING_INCLUDE_COVERAGE_PATH_PLANNING_H_
 
 #include <rclcpp/rclcpp.hpp>
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -64,10 +64,12 @@ class CoveragePathPlanning {
         void execute(const std::shared_ptr<GoalHandleCoverageAction> goal_handle);
         std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> face_safety(Mesh& mesh, double threshold, Mesh::Property_map<Mesh::Face_index, CGAL::Color>& colormap);
         CGAL::Point_set_3<Point> get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> fsafe);
-        std::vector<std::vector<Mesh::Face_index>> get_connected_components(Mesh& mesh, std::vector<Mesh::Face_index> fsafe);
+        std::vector<std::vector<Mesh::Face_index>> get_connected_components(Mesh& mesh);
+        Mesh get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index> faces);
+
 
 
         void simplify_mesh(Mesh& mesh); 
 };
 }
-#endif  // BITBOTS_DYNUP_INCLUDE_BITBOTS_DYNUP_DYNUP_NODE_H_
+#endif  // COVERAGE_PATH_PLANNING_INCLUDE_COVERAGE_PATH_PLANNING_H_
