@@ -38,106 +38,80 @@ void CoveragePathPlanning::handle_accepted(const std::shared_ptr<GoalHandleCover
 
 void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageAction> goal_handle)
   {
+    // ros2 action server goal setup
     RCLCPP_INFO(node_->get_logger(), "Executing goal...");
-
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<CoverageAction::Feedback>();
     auto result = std::make_shared<CoverageAction::Result>();
 
-    std::string map_filepath = goal->map_filepath;
-    Mesh mesh;
-
-    try 
-    {
-      std::ifstream stl_file(map_filepath, std::ifstream::in);
-
-      CGAL::IO::read_STL(stl_file, mesh);
-      stl_file.close();
-
-      RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
-
-      double min_z = std::numeric_limits<double>::max();
-
-      for (auto v : vertices(mesh)) {
-          double z = mesh.point(v).z();
-          if (z < min_z && z != 0.0) {
-              min_z = z;
-          }
-      }
-
-      Mesh::Halfedge_index  hr; 
-      for (auto v : vertices(mesh)) {
-        if(abs(mesh.point(v).z() - min_z) < 1e-2)
-        {
-          Mesh::Halfedge_index  h = halfedge(v, mesh);
-          hr = CGAL::Euler::remove_center_vertex(h, mesh);
-        }
-      }
-
-      CGAL::Euler::remove_face(hr, mesh);
-
-      CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.01);
-      int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
-
-      mesh.collect_garbage();
-    }
-    catch (const char* msg) 
-    {
-      RCLCPP_INFO(node_->get_logger(), "Exception: %s", msg);
-      result->success = false;
-    }
-
+    Mesh mesh = stl_to_mesh(goal->map_filepath); 
+    RCLCPP_INFO(node_->get_logger(), "Mesh Vertices: %d", mesh.number_of_vertices());
+    // add color map so we can show safe and obstacle triangles in different colors. 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
-    auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); 
-    Mesh msafe = get_sub_mesh(mesh, fsafe);
-    auto components = get_connected_components(msafe);
 
-    CGAL::Graphics_scene scene; // visualization for debug
+    auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); // find safe and unsafe triangles
+    Mesh msafe = get_sub_mesh(mesh, fsafe); // add all safe triangles to a separate mesh
+    auto components = get_connected_components(msafe); // that way we can find disconnected regions
+
+    CGAL::Graphics_scene scene;
     for (const auto& c : components) {
-      auto cen = get_centroids(msafe, c);
+      auto cen = get_centroids(msafe, c); // for each region find centroids for each triangle
       for (const auto& point : cen.points()) {
-        //  RCLCPP_INFO(node_->get_logger(), "Point: (%f, %f, %f)", point.x(), point.y(), point.z());
-        scene.add_text(point, "x"); // weirdly, drawing points doesnt work so we do text instead
+        scene.add_text(point, "x");
       }
     }
 
-    RCLCPP_INFO(node_->get_logger(), "Collapsed Nodes: %d", mesh.number_of_vertices());
-
-    
     CGAL::add_to_graphics_scene(mesh, scene);
     CGAL::draw_graphics_scene(scene);
 
-    std::ofstream out("output_mesh.off");
-    out << mesh;
-    out.close();
     result->success = true;
-    RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", map_filepath.c_str());
+    RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", goal->map_filepath.c_str());
 
     goal_handle->succeed(result);
 }
 
-std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> CoveragePathPlanning::face_safety(Mesh& mesh, double threshold, Mesh::Property_map<Mesh::Face_index, CGAL::Color>& colormap)
+Mesh CoveragePathPlanning::stl_to_mesh(std::string path)
 {
-    std::vector<Mesh::Face_index> fsafe;
-    std::vector<Mesh::Face_index> fobstacle;
+  Mesh mesh;
+  try 
+  {
+    std::ifstream stl_file(path, std::ifstream::in);
 
-    for (auto f : mesh.faces())
-    {
-      Vector normal = CGAL::Polygon_mesh_processing::compute_face_normal(f, mesh);
-      double angle = std::acos(normal.z()) * 180 / M_PI;
-      
-      if (angle < 15)
+    CGAL::IO::read_STL(stl_file, mesh);
+    stl_file.close();
+
+    RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
+
+    double min_z = std::numeric_limits<double>::max();
+
+    for (auto v : vertices(mesh)) {
+        double z = mesh.point(v).z();
+        if (z < min_z && z != 0.0) {
+            min_z = z;
+        }
+    }
+
+    Mesh::Halfedge_index  hr; 
+    for (auto v : vertices(mesh)) {
+      if(abs(mesh.point(v).z() - min_z) < 1e-2) // small tolerance so all bottom vertices are removed
       {
-        colormap[f] = CGAL::Color(0, 255, 0);
-        fsafe.push_back(f);
-      }
-      else
-      {
-        colormap[f] = CGAL::Color(255, 0, 0);
-        fobstacle.push_back(f);
+        Mesh::Halfedge_index  h = halfedge(v, mesh);
+        hr = CGAL::Euler::remove_center_vertex(h, mesh);
       }
     }
-    return {fsafe, fobstacle};
+
+    CGAL::Euler::remove_face(hr, mesh); // previous step leaves one large face from merging the others. Remove that face here.
+
+    CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.01);
+    int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
+
+    mesh.collect_garbage();
+  }
+  catch (const char* msg) 
+  {
+    RCLCPP_INFO(node_->get_logger(), "Exception: %s", msg);
+  }
+  return mesh;
 }
 
 Mesh CoveragePathPlanning::get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index> faces)
@@ -164,10 +138,37 @@ Mesh CoveragePathPlanning::get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index
   return subm;
 }
 
-CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> fsafe)
+std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> CoveragePathPlanning::face_safety(Mesh& mesh, 
+                                                                                                          double threshold, 
+                                                                                                          Mesh::Property_map<Mesh::Face_index, 
+                                                                                                          CGAL::Color>& colormap)
+{
+    std::vector<Mesh::Face_index> fsafe;
+    std::vector<Mesh::Face_index> fobstacle;
+
+    for (auto f : mesh.faces())
+    {
+      Vector normal = CGAL::Polygon_mesh_processing::compute_face_normal(f, mesh);
+      double angle = std::acos(normal.z()) * 180 / M_PI;
+      
+      if (angle <= 15)
+      {
+        colormap[f] = CGAL::Color(0, 255, 0);
+        fsafe.push_back(f);
+      }
+      else
+      {
+        colormap[f] = CGAL::Color(255, 0, 0);
+        fobstacle.push_back(f);
+      }
+    }
+    return {fsafe, fobstacle};
+}
+
+CGAL::Point_set_3<Point> CoveragePathPlanning::get_centroids(Mesh& mesh, std::vector<Mesh::Face_index> faces)
 {
   CGAL::Point_set_3<Point> cen;
-  for (auto f : fsafe)
+  for (auto f : faces)
   {
     auto h = mesh.halfedge(f);
 
