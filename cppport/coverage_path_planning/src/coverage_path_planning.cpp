@@ -51,11 +51,14 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); // find safe and unsafe triangles
     Mesh msafe = get_sub_mesh(mesh, fsafe); // add all safe triangles to a separate mesh
+    Mesh mobstacle = get_sub_mesh(mesh, fobstacle);
+    Mesh mobstacle2 = flatten_mesh(mobstacle);
     auto components = get_connected_components(msafe); // that way we can find disconnected regions
 
     CGAL::Graphics_scene scene;
     for (const auto& c : components) {
       auto cen = get_centroids(msafe, c); // for each region find centroids for each triangle
+      get_distance_matrix(cen, mobstacle2);
       for (const auto& point : cen.points()) {
         scene.add_text(point, "x");
       }
@@ -136,6 +139,54 @@ Mesh CoveragePathPlanning::get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index
     subm.add_face(vs);
   }
   return subm;
+}
+
+Mesh CoveragePathPlanning::flatten_mesh(Mesh mesh3)
+{
+  Mesh mesh2;
+
+  for (auto v : vertices(mesh3)) {
+        Point p = mesh3.point(v);
+        Point p2(p.x(), p.y(), 0);
+        mesh2.add_vertex(p2);
+    }
+  for (auto f : faces(mesh3)) {
+    std::vector<Mesh::Vertex_index> v2;
+    for (auto v : CGAL::vertices_around_face(mesh3.halfedge(f), mesh3)) {
+      v2.push_back(Mesh::Vertex_index(v));
+    }
+    mesh2.add_face(v2);
+  }
+
+  return mesh2;
+}
+
+std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles)
+{
+  std::vector<std::vector<double>> distance_matrix(points.size(), std::vector<double>(points.size(), 0));
+
+  for (size_t i = 0; i < points.size(); ++i) {
+    for (size_t j = i + 1; j < points.size(); ++j) {
+      double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
+      if(intersects_obstacle(points.point(i), points.point(j), obstacles))
+      {
+        dist += 100000;
+      }
+      distance_matrix[i][j] = dist;
+      distance_matrix[j][i] = dist;
+    }
+  }
+
+  return distance_matrix;
+}
+
+bool CoveragePathPlanning::intersects_obstacle(Point p1, Point p2, Mesh obstacles)
+{
+  Point p1_2(p1.x(), p1.y(), 0);
+  Point p2_2(p2.x(), p2.y(), 0);
+  std::vector<Point> points = {p1_2, p2_2};
+  auto range = boost::make_iterator_range(points.begin(), points.end());
+  return PMP::do_intersect(obstacles, range);
 }
 
 std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> CoveragePathPlanning::face_safety(Mesh& mesh, 

@@ -15,6 +15,7 @@
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
+#include <CGAL/Polygon_mesh_processing/intersection.h>
 
 #include <CGAL/draw_surface_mesh.h>
 #include <CGAL/draw_point_set_3.h>
@@ -33,6 +34,7 @@ namespace coverage_path_planning {
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_3                                          Point;
+typedef K::Point_2                                          Point_2;
 typedef CGAL::Surface_mesh<Point>                           Mesh;
 typedef K::Vector_3                                         Vector;
 
@@ -75,6 +77,11 @@ class CoveragePathPlanning {
         * return: The new mesh containining only the selected faces
         */
         Mesh get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index> faces);
+
+        Mesh flatten_mesh(Mesh mesh3);
+        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles);
+        bool intersects_obstacle(Point p1, Point p2, Mesh obstacles);
+
 
         /*
         * Finds safe and unsafe triangles in a mesh based on a threshold.
