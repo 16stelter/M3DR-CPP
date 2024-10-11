@@ -49,16 +49,24 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     // add color map so we can show safe and obstacle triangles in different colors. 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
 
-    auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap); // find safe and unsafe triangles
-    Mesh msafe = get_sub_mesh(mesh, fsafe); // add all safe triangles to a separate mesh
+    auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap);
+    Mesh msafe = get_sub_mesh(mesh, fsafe);
     Mesh mobstacle = get_sub_mesh(mesh, fobstacle);
-    Mesh mobstacle2 = flatten_mesh(mobstacle);
-    auto components = get_connected_components(msafe); // that way we can find disconnected regions
+    Mesh mobstacle2 = flatten_mesh(mobstacle); // set z = 0 to fake a 2d mesh (Mesh<Point_2> is not a TriangleMesh so doesn't work correctly)
+    std::vector<std::vector<Mesh::Face_index>> components = get_connected_components(msafe);
 
     CGAL::Graphics_scene scene;
-    for (const auto& c : components) {
-      auto cen = get_centroids(msafe, c); // for each region find centroids for each triangle
-      get_distance_matrix(cen, mobstacle2);
+    for (std::vector<Mesh::Face_index> c : components) {
+      CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
+      std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
+      for (size_t i = 0; i < dist.size(); ++i)
+        {
+            RCLCPP_INFO(node_->get_logger(), "Row %zu: ", i);
+            for (size_t j = 0; j < dist[i].size(); ++j)
+            {
+                RCLCPP_INFO(node_->get_logger(), "Value: %f", dist[i][j]);
+            }
+        }
       for (const auto& point : cen.points()) {
         scene.add_text(point, "x");
       }
