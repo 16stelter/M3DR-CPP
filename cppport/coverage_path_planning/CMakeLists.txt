@@ -16,6 +16,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(CGAL REQUIRED COMPONENTS Qt6)
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -35,6 +36,7 @@ add_compile_options(-Wall -Werror -Wno-unused -fPIC)
 
 set(SOURCES
   src/coverage_path_planning.cpp
+  src/LKHWrapper.cpp
 )
 
 add_executable(CoveragePathPlanning ${SOURCES})
@@ -45,6 +47,7 @@ ament_target_dependencies(
   rclcpp
   rclcpp_action
   rosidl_default_runtime
+  ament_index_cpp
 )
 
 rosidl_target_interfaces(CoveragePathPlanning ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -61,6 +64,8 @@ install(TARGETS CoveragePathPlanning DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY resources DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY scripts USE_SOURCE_PERMISSIONS
         DESTINATION lib/${PROJECT_NAME})

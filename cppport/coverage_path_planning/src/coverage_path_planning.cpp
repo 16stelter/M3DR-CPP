@@ -56,17 +56,12 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     std::vector<std::vector<Mesh::Face_index>> components = get_connected_components(msafe);
 
     CGAL::Graphics_scene scene;
+    LKHWrapper lkh;
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      for (size_t i = 0; i < dist.size(); ++i)
-        {
-            RCLCPP_INFO(node_->get_logger(), "Row %zu: ", i);
-            for (size_t j = 0; j < dist[i].size(); ++j)
-            {
-                RCLCPP_INFO(node_->get_logger(), "Value: %f", dist[i][j]);
-            }
-        }
+      std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
+      auto path = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
       for (const auto& point : cen.points()) {
         scene.add_text(point, "x");
       }

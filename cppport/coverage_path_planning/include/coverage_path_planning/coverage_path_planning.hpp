@@ -3,6 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Point_set_3.h>
@@ -29,6 +30,8 @@
 #include <iostream>
 
 #include "coverage_path_planning/action/coverage_action.hpp"
+#include "coverage_path_planning/LKHWrapper.h"
+
 
 namespace coverage_path_planning {
 
