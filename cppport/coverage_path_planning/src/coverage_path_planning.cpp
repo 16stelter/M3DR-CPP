@@ -82,7 +82,6 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
         }
         p1 = p;
       }
-
     }
 
     std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
@@ -340,9 +339,9 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
     for(int j = 0; j < static_cast<int>(intra_paths[i].size()); j++)
     {
       geometry_msgs::msg::Point p;
-      p.x = inter_path.point(j).x();
-      p.y = inter_path.point(j).y();
-      p.z = inter_path.point(j).z();
+      p.x = intra_paths[i].point(j).x();
+      p.y = intra_paths[i].point(j).y();
+      p.z = intra_paths[i].point(j).z();
       pointArr.data.push_back(p);
     }
     result->intra_paths.push_back(pointArr);
