@@ -2,6 +2,19 @@
 
 CGAL::Point_set_3<Point> LKHWrapper::execute(CGAL::Point_set_3<Point> points, std::vector<std::vector<double>> dist, std::string lkh_path, std::string output_path)
 {
+  if(points.size() == 1)
+  {
+    CGAL::Point_set_3<Point> path;
+    path.insert(points.point(0));
+    return path;
+  }
+  else if(points.size() == 2)
+  {
+    CGAL::Point_set_3<Point> path;
+    path.insert(points.point(0));
+    path.insert(points.point(1));
+    return path;
+  }
   write_problem(dist, output_path);
   write_params(output_path);
   int result = system((lkh_path + " " + output_path + "/params.par").c_str());
@@ -54,10 +67,12 @@ CGAL::Point_set_3<Point> LKHWrapper::result_to_pointset(CGAL::Point_set_3<Point>
       if (line.find("-1") != std::string::npos)
       {
         tour_section = false;
-        break;
       }
-      int p = std::stoi(line);
-      path.insert(points.point(p));
+      else
+      {
+        int p = std::stoi(line) - 1;
+        path.insert(points.point(p));
+      }
     }
   }
   result_file.close();

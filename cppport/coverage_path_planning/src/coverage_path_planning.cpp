@@ -57,14 +57,44 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     CGAL::Graphics_scene scene;
     LKHWrapper lkh;
+    CGAL::Point_set_3<Point> endpoints;
+    std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
+    
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
       auto path = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
-      for (const auto& point : cen.points()) {
-        scene.add_text(point, "x");
+      bool first = true;
+      Point p1;
+      endpoints.insert(path.point(*path.begin()));
+      endpoints.insert(path.point(*(--path.end())));
+      for (Point p : path.points())
+      {
+        if (first)
+        {
+          first = false;
+        }
+        else
+        {
+          scene.add_segment(p1, p, CGAL::Color(0, 0, 255));
+        }
+        p1 = p;
       }
+
+    }
+
+    std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
+    auto path = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+    Point p1;
+    int count = 0;
+    for (Point p : path.points())
+    {
+      if (!count == 0 && count % 2 == 0)
+      {
+          scene.add_segment(p1, p, CGAL::Color(125, 0, 125));
+      }
+      p1 = p;
+      count++;
     }
 
     CGAL::add_to_graphics_scene(mesh, scene);
@@ -108,7 +138,7 @@ Mesh CoveragePathPlanning::stl_to_mesh(std::string path)
 
     CGAL::Euler::remove_face(hr, mesh); // previous step leaves one large face from merging the others. Remove that face here.
 
-    CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.01);
+    CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.005);
     int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
 
     mesh.collect_garbage();
@@ -175,6 +205,21 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
       {
         dist += 100000;
       }
+      distance_matrix[i][j] = dist;
+      distance_matrix[j][i] = dist;
+    }
+  }
+
+  return distance_matrix;
+}
+
+std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points)
+{
+  std::vector<std::vector<double>> distance_matrix(points.size(), std::vector<double>(points.size(), 0));
+
+  for (size_t i = 0; i < points.size(); ++i) {
+    for (size_t j = i + 1; j < points.size(); ++j) {
+      double dist = (i % 2 == 0 && j == i + 1) ? 0 : std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
       distance_matrix[i][j] = dist;
       distance_matrix[j][i] = dist;
     }

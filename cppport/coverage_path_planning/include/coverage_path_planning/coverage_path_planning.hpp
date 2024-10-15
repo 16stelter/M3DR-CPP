@@ -83,6 +83,7 @@ class CoveragePathPlanning {
 
         Mesh flatten_mesh(Mesh mesh3);
         std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles);
+        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points);
         bool intersects_obstacle(Point p1, Point p2, Mesh obstacles);
 
 
