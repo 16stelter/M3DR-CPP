@@ -59,11 +59,13 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     LKHWrapper lkh;
     CGAL::Point_set_3<Point> endpoints;
     std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
+    std::vector<CGAL::Point_set_3<Point>> intra_paths;
     
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
       auto path = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+      intra_paths.push_back(path);
       bool first = true;
       Point p1;
       endpoints.insert(path.point(*path.begin()));
@@ -84,10 +86,10 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     }
 
     std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
-    auto path = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+    auto inter_path = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
     Point p1;
     int count = 0;
-    for (Point p : path.points())
+    for (Point p : inter_path.points())
     {
       if (!count == 0 && count % 2 == 0)
       {
@@ -99,6 +101,8 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     CGAL::add_to_graphics_scene(mesh, scene);
     CGAL::draw_graphics_scene(scene);
+
+    result = create_final_path(result, endpoints, inter_path, intra_paths);
 
     result->success = true;
     RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", goal->map_filepath.c_str());
@@ -200,13 +204,15 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
 
   for (size_t i = 0; i < points.size(); ++i) {
     for (size_t j = i + 1; j < points.size(); ++j) {
-      double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
-      if(intersects_obstacle(points.point(i), points.point(j), obstacles))
-      {
-        dist += 100000;
+      if (i != j && j > i) {
+        double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
+        if(intersects_obstacle(points.point(i), points.point(j), obstacles))
+        {
+          dist += 100000;
+        }
+        distance_matrix[i][j] = dist;
+        distance_matrix[j][i] = dist;
       }
-      distance_matrix[i][j] = dist;
-      distance_matrix[j][i] = dist;
     }
   }
 
@@ -219,12 +225,13 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
 
   for (size_t i = 0; i < points.size(); ++i) {
     for (size_t j = i + 1; j < points.size(); ++j) {
-      double dist = (i % 2 == 0 && j == i + 1) ? 0 : std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
-      distance_matrix[i][j] = dist;
-      distance_matrix[j][i] = dist;
+      if (i != j && j > i) {
+        double dist = (i % 2 == 0 && j == i + 1) ? 0 : std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
+        distance_matrix[i][j] = dist;
+        distance_matrix[j][i] = dist;
+      }
     }
   }
-
   return distance_matrix;
 }
 
@@ -302,6 +309,47 @@ std::vector<std::vector<Mesh::Face_index>> CoveragePathPlanning::get_connected_c
     map[components[f]].push_back(f);
   }
   return map;
+}
+
+std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> CoveragePathPlanning::create_final_path(std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> result, CGAL::Point_set_3<Point> endpoints, CGAL::Point_set_3<Point> inter_path, std::vector<CGAL::Point_set_3<Point>> intra_paths)
+{
+  std::vector<geometry_msgs::msg::Point> inter_p;
+  std::vector<int> region_order;
+  for(int i = 0; i < static_cast<int>(inter_path.size()); i++)
+  {
+    geometry_msgs::msg::Point p;
+    p.x = inter_path.point(i).x();
+    p.y = inter_path.point(i).y();
+    p.z = inter_path.point(i).z();
+    inter_p.push_back(p);
+    if(i % 2 == 0)
+    {
+      for (int j = 0; j < static_cast<int>(endpoints.size()); j++) {
+        if (endpoints.point(j) == inter_path.point(i)) {
+          region_order.push_back(j);
+          break;
+        }
+      }
+    }
+  }
+  std::vector<std::vector<geometry_msgs::msg::Point>> intra_p;
+  for(int i = 0; i < static_cast<int>(intra_paths.size()); i++)
+  {
+    coverage_path_planning::msg::PointArr pointArr;
+    std::vector<geometry_msgs::msg::Point> region;
+    for(int j = 0; j < static_cast<int>(intra_paths[i].size()); j++)
+    {
+      geometry_msgs::msg::Point p;
+      p.x = inter_path.point(j).x();
+      p.y = inter_path.point(j).y();
+      p.z = inter_path.point(j).z();
+      pointArr.data.push_back(p);
+    }
+    result->intra_paths.push_back(pointArr);
+  }
+  result->inter_path = inter_p;
+  result->region_order = region_order;
+  return result;
 }
 
 } // namespace coverage_path_planning

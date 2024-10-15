@@ -4,7 +4,9 @@ string map_filepath
 ---
 # Result
 bool success
-
+PointArr[] intra_paths
+geometry_msgs/Point[] inter_path
+int32[] region_order
 ---
 # Feedback
 string progress_message

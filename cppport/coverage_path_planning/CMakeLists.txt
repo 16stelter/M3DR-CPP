@@ -18,12 +18,16 @@ find_package(rclcpp_action REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(CGAL REQUIRED COMPONENTS Qt6)
+find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/PointArr.msg"
   "action/CoverageAction.action"
+  DEPENDENCIES
+  geometry_msgs
 )
 
 include_directories(include 
@@ -47,6 +51,7 @@ ament_target_dependencies(
   rclcpp
   rclcpp_action
   rosidl_default_runtime
+  geometry_msgs
   ament_index_cpp
 )
 

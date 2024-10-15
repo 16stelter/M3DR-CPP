@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include <geometry_msgs/msg/point.hpp>
 
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Point_set_3.h>
@@ -30,6 +31,7 @@
 #include <iostream>
 
 #include "coverage_path_planning/action/coverage_action.hpp"
+#include "coverage_path_planning/msg/point_arr.hpp"
 #include "coverage_path_planning/LKHWrapper.h"
 
 
@@ -116,6 +118,10 @@ class CoveragePathPlanning {
         * return: Inner vectors contain all faces that belong to a certain component, outer vector contains all components
         */
         std::vector<std::vector<Mesh::Face_index>> get_connected_components(Mesh& mesh);
+
+        std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> create_final_path(std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> result, CGAL::Point_set_3<Point> endpoints, CGAL::Point_set_3<Point> inter_path, std::vector<CGAL::Point_set_3<Point>> intra_paths);
+
+
 };
 }
 #endif  // COVERAGE_PATH_PLANNING_INCLUDE_COVERAGE_PATH_PLANNING_H_
