@@ -8,6 +8,9 @@ bool success
 PointArr[] intra_paths
 geometry_msgs/Point[] inter_path
 int32[] region_order
+float32[] intra_costs
+float32 inter_cost
+float32 total_cost
 ---
 # Feedback
 string progress_message

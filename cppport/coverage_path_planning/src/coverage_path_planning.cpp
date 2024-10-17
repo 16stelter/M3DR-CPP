@@ -60,16 +60,20 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     CGAL::Point_set_3<Point> endpoints;
     std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
     std::vector<CGAL::Point_set_3<Point>> intra_paths;
+    std::vector<float> intra_costs;
+    
     
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      auto path = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
       intra_paths.push_back(path);
+      intra_costs.push_back(cost);
       bool first = true;
       Point p1;
       endpoints.insert(path.point(*path.begin()));
       endpoints.insert(path.point(*(--path.end())));
+
       for (Point p : path.points())
       {
         if (first)
@@ -83,9 +87,10 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
         p1 = p;
       }
     }
+    result->intra_costs = intra_costs;
 
     std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
-    auto inter_path = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
     Point p1;
     int count = 0;
     for (Point p : inter_path.points())
@@ -97,6 +102,8 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       p1 = p;
       count++;
     }
+    result->inter_cost = inter_cost;
+    result->total_cost = std::accumulate(intra_costs.begin(), intra_costs.end(), 0.0f) + inter_cost;
 
     if(goal->debug_mode == 2)
     {
@@ -205,7 +212,7 @@ Mesh CoveragePathPlanning::flatten_mesh(Mesh mesh3)
 
 std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles)
 {
-  std::vector<std::vector<double>> distance_matrix(points.size(), std::vector<double>(points.size(), 0));
+  std::vector<std::vector<double>> distance_matrix(points.size()+1, std::vector<double>(points.size()+1, 0));
 
   for (size_t i = 0; i < points.size(); ++i) {
     for (size_t j = i + 1; j < points.size(); ++j) {
@@ -226,7 +233,7 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
 
 std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points)
 {
-  std::vector<std::vector<double>> distance_matrix(points.size(), std::vector<double>(points.size(), 0));
+  std::vector<std::vector<double>> distance_matrix(points.size()+1, std::vector<double>(points.size()+1, 0));
 
   for (size_t i = 0; i < points.size(); ++i) {
     for (size_t j = i + 1; j < points.size(); ++j) {
