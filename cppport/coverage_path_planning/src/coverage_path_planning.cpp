@@ -98,8 +98,14 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       count++;
     }
 
-    //CGAL::add_to_graphics_scene(mesh, scene);
-    CGAL::draw_graphics_scene(scene);
+    if(goal->debug_mode == 2)
+    {
+      CGAL::add_to_graphics_scene(mesh, scene);
+    }
+    if(goal->debug_mode > 0)
+    {
+      CGAL::draw_graphics_scene(scene);
+    }
 
     result = create_final_path(result, endpoints, inter_path, intra_paths);
 
