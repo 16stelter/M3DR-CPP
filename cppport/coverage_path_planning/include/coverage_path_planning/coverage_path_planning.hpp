@@ -83,11 +83,46 @@ class CoveragePathPlanning {
         */
         Mesh get_sub_mesh(Mesh& mesh, std::vector<Mesh::Face_index> faces);
 
+        /*
+        * Projects a 3D mesh onto the xy plane. This is necessary, as a Surface_mesh<Point_2> does not count as a TriangularMesh
+        * making some required functions unavailable
+        * 
+        * Mesh mesh3: 3D input mesh
+        * 
+        * return: Surface_mesh<Point_3> containing 2D projection
+        */
         Mesh flatten_mesh(Mesh mesh3);
-        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles);
-        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points);
-        bool intersects_obstacle(Point p1, Point p2, Mesh obstacles);
 
+        /*
+        * Calculates the distance matrix for the intra region case. If the straight line between two points crosses an obstacle,
+        * it is increased by 100000.
+        * 
+        * CGAL::Point_set_3<Point> points: Points to be connected
+        * Mesh obstacles: Obstacles to be avoided
+        * 
+        * return: Distance matrix
+        */
+        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles);
+
+        /*
+        * Calculates the distance matrix for the inter region case. No obstacles, but the weight of subsequent pairs of points 
+        * (i.e. 0 & 1, 2 & 3, 4 & 5, ...) is set to 0, as they should come from the same region.
+        * 
+        * CGAL::Point_set_3<Point> points: Points to be connected
+        * 
+        * return: Distance matrix
+        */
+        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points);
+
+        /*
+        * Checks whether the straight line between two points intersects with any face of a given mesh.
+        *
+        * Point p1, p2: Two input points to be connected
+        * Mesh obstacles: Mesh containing obstacle faces
+        * 
+        * return: True if intersects, false otherwise
+        */
+        bool intersects_obstacle(Point p1, Point p2, Mesh obstacles);
 
         /*
         * Finds safe and unsafe triangles in a mesh based on a threshold.
@@ -119,6 +154,16 @@ class CoveragePathPlanning {
         */
         std::vector<std::vector<Mesh::Face_index>> get_connected_components(Mesh& mesh);
 
+        /*
+        * Formats the individual paths into a ros2 action result
+        * 
+        * std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> result: Pointer to the result message
+        * CGAL::Point_set_3<Point> endpoints: First and last point of each region, in order
+        * CGAL::Point_set_3<Point> inter_path: Calculated path between all regions
+        * std::vector<CGAL::Point_set_3<Point>> intra_paths: Calculated paths inside each region
+        * 
+        * return: Ros2 action result pointer, fields are now filled in
+        */
         std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> create_final_path(std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> result, CGAL::Point_set_3<Point> endpoints, CGAL::Point_set_3<Point> inter_path, std::vector<CGAL::Point_set_3<Point>> intra_paths);
 
 

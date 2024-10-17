@@ -326,7 +326,7 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
     {
       for (int j = 0; j < static_cast<int>(endpoints.size()); j++) {
         if (endpoints.point(j) == inter_path.point(i)) {
-          inverse[floor(j/2)] = (j % 2 == 1);
+          inverse[floor(j/2)] = (j % 2 == 1); // Mark regions as inverted if entered through second endpoint
           region_order.push_back(floor(j/2));
           break;
         }
