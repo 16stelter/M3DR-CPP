@@ -98,7 +98,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       count++;
     }
 
-    CGAL::add_to_graphics_scene(mesh, scene);
+    //CGAL::add_to_graphics_scene(mesh, scene);
     CGAL::draw_graphics_scene(scene);
 
     result = create_final_path(result, endpoints, inter_path, intra_paths);
@@ -314,6 +314,7 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
 {
   std::vector<geometry_msgs::msg::Point> inter_p;
   std::vector<int> region_order;
+  std::vector<bool> inverse(inter_path.size()/2, false);
   for(int i = 0; i < static_cast<int>(inter_path.size()); i++)
   {
     geometry_msgs::msg::Point p;
@@ -325,7 +326,8 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
     {
       for (int j = 0; j < static_cast<int>(endpoints.size()); j++) {
         if (endpoints.point(j) == inter_path.point(i)) {
-          region_order.push_back(j);
+          inverse[floor(j/2)] = (j % 2 == 1);
+          region_order.push_back(floor(j/2));
           break;
         }
       }
@@ -336,13 +338,27 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
   {
     coverage_path_planning::msg::PointArr pointArr;
     std::vector<geometry_msgs::msg::Point> region;
-    for(int j = 0; j < static_cast<int>(intra_paths[i].size()); j++)
+    if(inverse[i]) 
     {
-      geometry_msgs::msg::Point p;
-      p.x = intra_paths[i].point(j).x();
-      p.y = intra_paths[i].point(j).y();
-      p.z = intra_paths[i].point(j).z();
-      pointArr.data.push_back(p);
+      for(int j = static_cast<int>(intra_paths[i].size())-1; j >= 0; j--)
+      {
+        geometry_msgs::msg::Point p;
+        p.x = intra_paths[i].point(j).x();
+        p.y = intra_paths[i].point(j).y();
+        p.z = intra_paths[i].point(j).z();
+        pointArr.data.push_back(p);
+      }
+    }
+    else 
+    {
+      for(int j = 0; j < static_cast<int>(intra_paths[i].size()); j++)
+      {
+        geometry_msgs::msg::Point p;
+        p.x = intra_paths[i].point(j).x();
+        p.y = intra_paths[i].point(j).y();
+        p.z = intra_paths[i].point(j).z();
+        pointArr.data.push_back(p);
+      }
     }
     result->intra_paths.push_back(pointArr);
   }
