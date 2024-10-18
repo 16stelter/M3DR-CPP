@@ -38,13 +38,14 @@ void CoveragePathPlanning::handle_accepted(const std::shared_ptr<GoalHandleCover
 
 void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageAction> goal_handle)
   {
+    auto start_time = node_->now();
     // ros2 action server goal setup
     RCLCPP_INFO(node_->get_logger(), "Executing goal...");
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<CoverageAction::Feedback>();
     auto result = std::make_shared<CoverageAction::Result>();
 
-    Mesh mesh = stl_to_mesh(goal->map_filepath); 
+    Mesh mesh = stl_to_mesh(goal->map_filepath, goal->reduction_factor); 
     RCLCPP_INFO(node_->get_logger(), "Mesh Vertices: %d", mesh.number_of_vertices());
     // add color map so we can show safe and obstacle triangles in different colors. 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
@@ -118,11 +119,14 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
     result->success = true;
     RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", goal->map_filepath.c_str());
-
+    auto end_time = node_->now();
+    auto time_elapsed = end_time - start_time;
+    result->time_elapsed.sec = time_elapsed.seconds();
+    result->time_elapsed.nanosec = time_elapsed.nanoseconds() % 1000000000;
     goal_handle->succeed(result);
 }
 
-Mesh CoveragePathPlanning::stl_to_mesh(std::string path)
+Mesh CoveragePathPlanning::stl_to_mesh(std::string path, float reduction_factor)
 {
   Mesh mesh;
   try 
@@ -133,29 +137,31 @@ Mesh CoveragePathPlanning::stl_to_mesh(std::string path)
     stl_file.close();
 
     RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
-
-    double min_z = std::numeric_limits<double>::max();
-
-    for (auto v : vertices(mesh)) {
-        double z = mesh.point(v).z();
-        if (z < min_z && z != 0.0) {
-            min_z = z;
-        }
-    }
-
-    Mesh::Halfedge_index  hr; 
-    for (auto v : vertices(mesh)) {
-      if(abs(mesh.point(v).z() - min_z) < 1e-2) // small tolerance so all bottom vertices are removed
-      {
-        Mesh::Halfedge_index  h = halfedge(v, mesh);
-        hr = CGAL::Euler::remove_center_vertex(h, mesh);
+    if(reduction_factor > 0.0) // 0 is the default in a ros msg. If this is 0 we assume the user did not want mesh reduction.
+    {
+      double min_z = std::numeric_limits<double>::max();
+      for (auto v : vertices(mesh)) {
+          double z = mesh.point(v).z();
+          if (z < min_z && z != 0.0) {
+              min_z = z;
+          }
       }
+
+      Mesh::Halfedge_index  hr; 
+      for (auto v : vertices(mesh)) {
+        if(abs(mesh.point(v).z() - min_z) < 1e-2) // small tolerance so all bottom vertices are removed
+        {
+          Mesh::Halfedge_index  h = halfedge(v, mesh);
+          hr = CGAL::Euler::remove_center_vertex(h, mesh);
+        }
+      }
+
+      CGAL::Euler::remove_face(hr, mesh); // previous step leaves one large face from merging the others. Remove that face here.
+
+      CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(reduction_factor);
+      int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
     }
 
-    CGAL::Euler::remove_face(hr, mesh); // previous step leaves one large face from merging the others. Remove that face here.
-
-    CGAL::Surface_mesh_simplification::Edge_count_ratio_stop_predicate<Mesh> stop(0.005);
-    int num_collapsed = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
 
     mesh.collect_garbage();
   }

@@ -1,5 +1,6 @@
 # Goal
 string map_filepath
+float32 reduction_factor
 int32 debug_mode
 
 ---
@@ -11,6 +12,7 @@ int32[] region_order
 float32[] intra_costs
 float32 inter_cost
 float32 total_cost
+builtin_interfaces/Duration time_elapsed
 ---
 # Feedback
 string progress_message

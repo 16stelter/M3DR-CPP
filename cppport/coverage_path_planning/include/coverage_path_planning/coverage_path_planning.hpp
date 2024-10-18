@@ -5,6 +5,7 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include <geometry_msgs/msg/point.hpp>
+#include <builtin_interfaces/msg/duration.hpp>
 
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Point_set_3.h>
@@ -71,7 +72,7 @@ class CoveragePathPlanning {
         * 
         * return: Simplified surface mesh
         */
-        Mesh stl_to_mesh(std::string path);
+        Mesh stl_to_mesh(std::string path, float reduction_factor);
 
         /*
         * Given a mesh and a vector of faces, creates a new mesh that only contains those faces.
