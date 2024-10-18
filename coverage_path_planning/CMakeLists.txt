@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()  
 
-set(CGAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../CGAL-6.0")
+set(CGAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/CGAL-6.0")
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
