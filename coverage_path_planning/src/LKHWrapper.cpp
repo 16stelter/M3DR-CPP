@@ -1,6 +1,6 @@
 #include "coverage_path_planning/LKHWrapper.h"
 
-std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3<Point> points, std::vector<std::vector<double>> dist, std::string lkh_path, std::string output_path)
+std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3<Point> points, std::vector<std::vector<double>> dist, std::string lkh_path, std::string output_path, bool is_inter_path)
 {
   if(points.size() == 1)
   {
@@ -16,13 +16,13 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3
     float cost = CGAL::squared_distance(points.point(0), points.point(1));
     return std::make_pair(path, cost);
   }
-  write_problem(dist, output_path);
+  write_problem(dist, output_path, is_inter_path);
   write_params(output_path);
   int result = system((lkh_path + " " + output_path + "/params.par").c_str());
   return result_to_pointset(points, output_path);
 };
 
-void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::string output_path)
+void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::string output_path, bool is_inter_path)
 {
   std::cerr << (output_path + "/problem.tsp");
 	std::ofstream problem_file(output_path + "/problem.tsp");
@@ -36,6 +36,15 @@ void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::strin
 	  }
 	  problem_file << "\n";
 	}
+  if(is_inter_path)
+  {
+    problem_file << "FIXED_EDGES_SECTION" << "\n";
+    for (size_t i = 0; i < dist.size()-2; i = i+2) 
+    {
+      problem_file << i+1 << " " << i+2 << "\n";
+    }
+
+  }
   problem_file << "EOF";
   problem_file.close();
 };
