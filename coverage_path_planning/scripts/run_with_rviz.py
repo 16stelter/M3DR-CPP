@@ -1,12 +1,10 @@
-import time
 import rclpy
 import rclpy.duration
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from rclpy.callback_groups import ReentrantCallbackGroup
-from geometry_msgs.msg import Point, PointStamped
 from visualization_msgs.msg import Marker, MarkerArray
 from coverage_path_planning.action import CoverageAction
+from coverage_path_planning.msg import TrialMetadata
 from map_gen.srv import GenerateMap
 import random
 
@@ -14,6 +12,7 @@ rclpy.init()
 node_ = Node("rviz_coverage")
 action_client_ = ActionClient(node_, CoverageAction, "coverage_action")
 service_client_ = node_.create_client(GenerateMap, "map_gen/generate_map")
+metadata_pub_ = node_.create_publisher(TrialMetadata, "trial_metadata", 10)
 line_pub_ = node_.create_publisher(MarkerArray, "coverage_marker", 10)
 
 inter_marker_ = Marker()
@@ -41,10 +40,11 @@ smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
 
-random.seed(1234)
+random.seed(5563)
 
 for i in range(num_cycles):
     node_.get_logger().info("Processing map {i+1}/{num_cycles}")
+    trial_metadata = TrialMetadata()
 
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
@@ -53,6 +53,12 @@ for i in range(num_cycles):
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
+
+    trial_metadata.id = i
+    trial_metadata.size = request.size
+    trial_metadata.max_slope = request.max_slope
+    trial_metadata.smoothing_iterations = request.smoothing_iterations
+    trial_metadata.smoothing_alpha = request.smoothing_alpha
 
     service_client_.wait_for_service()
     node_.get_logger().info("Sending MapGen request...")
@@ -109,6 +115,14 @@ for i in range(num_cycles):
                 intra_marker_.points.append(p)
             marker_array.markers.append(intra_marker_)
         line_pub_.publish(marker_array)
+
+        trial_metadata.inter_cost = result.inter_cost
+        trial_metadata.intra_costs = result.intra_costs
+        trial_metadata.total_cost = result.total_cost
+        for i in range(len(result.region_order)):
+            trial_metadata.num_nodes.append(len(result.intra_paths[result.region_order[i]].data))
+        trial_metadata.num_regions = len(result.region_order)
+        metadata_pub_.publish(trial_metadata)
     else:
         node_.get_logger().error("Action execution failed")
 

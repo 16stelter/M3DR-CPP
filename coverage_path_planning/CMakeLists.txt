@@ -26,6 +26,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PointArr.msg"
+  "msg/TrialMetadata.msg"
   "action/CoverageAction.action"
   DEPENDENCIES
   geometry_msgs

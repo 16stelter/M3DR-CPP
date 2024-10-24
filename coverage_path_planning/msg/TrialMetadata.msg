@@ -1,0 +1,11 @@
+int32 id
+int32 size
+float32 max_slope
+int32 smoothing_iterations
+float32 smoothing_alpha
+int32[] num_nodes
+int32 num_regions
+float32 inter_cost
+float32[] intra_costs
+float32 total_cost
+builtin_interfaces/Duration duration
