@@ -77,15 +77,16 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
       for (Point p : path.points())
       {
+        Point pz(p.x(), p.y(), p.z()+0.5);
         if (first)
         {
           first = false;
         }
         else
         {
-          scene.add_segment(p1, p, CGAL::Color(0, 0, 255));
+          scene.add_segment(p1, pz, CGAL::Color(0, 0, 255));
         }
-        p1 = p;
+        p1 = pz;
       }
     }
     result->intra_costs = intra_costs;
@@ -96,11 +97,12 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     int count = 0;
     for (Point p : inter_path.points())
     {
+      Point pz(p.x(), p.y(), p.z()+0.5);
       if (!count == 0 && count % 2 == 0)
       {
-          scene.add_segment(p1, p, CGAL::Color(125, 0, 125));
+          scene.add_segment(p1, pz, CGAL::Color(125, 0, 125));
       }
-      p1 = p;
+      p1 = pz;
       count++;
     }
     result->inter_cost = inter_cost;
@@ -276,12 +278,12 @@ std::pair<std::vector<Mesh::Face_index>, std::vector<Mesh::Face_index>> Coverage
       double angle = std::acos(normal.z()) * 180 / M_PI;
       if (angle <= 15)
       {
-        colormap[f] = CGAL::Color(0, 255, 0);
+        colormap[f] = CGAL::Color(255, 255, 255);
         fsafe.push_back(f);
       }
       else
       {
-        colormap[f] = CGAL::Color(255, 0, 0);
+        colormap[f] = CGAL::Color(255, 120, 120);
         fobstacle.push_back(f);
       }
     }
@@ -333,17 +335,20 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
   std::vector<geometry_msgs::msg::Point> inter_p;
   std::vector<int> region_order;
   std::vector<bool> inverse(inter_path.size()/2, false);
-  for(int i = 0; i < static_cast<int>(inter_path.size()); i++)
+
+  auto it = inter_path.begin();
+  for(int i = 0; it != inter_path.end(); it++, i++)
   {
     geometry_msgs::msg::Point p;
-    p.x = inter_path.point(i).x();
-    p.y = inter_path.point(i).y();
-    p.z = inter_path.point(i).z();
+    p.x = inter_path.point(*it).x();
+    p.y = inter_path.point(*it).y();
+    p.z = inter_path.point(*it).z();
     inter_p.push_back(p);
     if(i % 2 == 0)
     {
-      for (int j = 0; j < static_cast<int>(endpoints.size()); j++) {
-        if (endpoints.point(j) == inter_path.point(i)) {
+      auto jt = endpoints.begin();
+      for (int j = 0; jt != endpoints.end(); jt++, j++) {
+        if (endpoints.point(*jt) == inter_path.point(*it)) {
           inverse[floor(j/2)] = (j % 2 == 1); // Mark regions as inverted if entered through second endpoint
           region_order.push_back(floor(j/2));
           break;
@@ -358,23 +363,25 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
     std::vector<geometry_msgs::msg::Point> region;
     if(inverse[i]) 
     {
-      for(int j = static_cast<int>(intra_paths[i].size())-1; j >= 0; j--)
+      auto kt = intra_paths[i].end()-1;
+      for(; kt != intra_paths[i].begin()-1; kt--)
       {
         geometry_msgs::msg::Point p;
-        p.x = intra_paths[i].point(j).x();
-        p.y = intra_paths[i].point(j).y();
-        p.z = intra_paths[i].point(j).z();
+        p.x = intra_paths[i].point(*kt).x();
+        p.y = intra_paths[i].point(*kt).y();
+        p.z = intra_paths[i].point(*kt).z();
         pointArr.data.push_back(p);
       }
     }
     else 
     {
-      for(int j = 0; j < static_cast<int>(intra_paths[i].size()); j++)
+      auto kt = intra_paths[i].begin();
+      for(; kt != intra_paths[i].end(); kt++)
       {
         geometry_msgs::msg::Point p;
-        p.x = intra_paths[i].point(j).x();
-        p.y = intra_paths[i].point(j).y();
-        p.z = intra_paths[i].point(j).z();
+        p.x = intra_paths[i].point(*kt).x();
+        p.y = intra_paths[i].point(*kt).y();
+        p.z = intra_paths[i].point(*kt).z();
         pointArr.data.push_back(p);
       }
     }

@@ -64,7 +64,7 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::result_to_pointset(CGAL::
   std::string line;
   float cost = -std::numeric_limits<float>::infinity();
   bool tour_section = false;
-  Point p0(0,0,0);
+  Point p0(0.0, 0.0, 0.0);
   while (std::getline(result_file, line)) {
     if (line.find("Length") != std::string::npos) 
     {
@@ -103,19 +103,20 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::result_to_pointset(CGAL::
 CGAL::Point_set_3<Point> LKHWrapper::shift_point_set(CGAL::Point_set_3<Point> point_set, Point target)
 {
   auto it = point_set.begin();
-    for (; it != point_set.end(); ++it) {
-        if (point_set.point(*it) == Point(0, 0, 0)) {
-            break;
-        }
-    }
+  for (; it != point_set.end(); ++it) {
+      if (point_set.point(*it) == Point(0, 0, 0)) {
+          break;
+      }
+  }
 
-    if (it != point_set.end()) {
-        std::rotate(point_set.begin(), it+1, point_set.end()); 
-    }
+  if (it != point_set.end()) {
+      std::rotate(point_set.begin(), it+1, point_set.end()); 
+  }
 
-    if (!point_set.empty()) {
-        point_set.remove(point_set.end()-1);
-    }
+  if (!point_set.empty()) {
+      point_set.remove(point_set.end()-1);
+  }
+
   return point_set;
 }
 
