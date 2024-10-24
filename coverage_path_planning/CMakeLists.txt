@@ -19,6 +19,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(CGAL REQUIRED COMPONENTS Qt6)
 find_package(geometry_msgs REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
