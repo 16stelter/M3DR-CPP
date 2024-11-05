@@ -71,7 +71,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       intra_paths.push_back(path);
       intra_costs.push_back(cost);
       bool first = true;
-      Point p1;
+      Point p1 = Point();
       endpoints.insert(path.point(*path.begin()));
       endpoints.insert(path.point(*(--path.end())));
 

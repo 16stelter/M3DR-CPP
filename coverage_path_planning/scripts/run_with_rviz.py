@@ -1,7 +1,8 @@
 import rclpy
-import rclpy.duration
+from builtin_interfaces.msg import Duration
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.clock import Clock
 from visualization_msgs.msg import Marker, MarkerArray
 from coverage_path_planning.action import CoverageAction
 from coverage_path_planning.msg import TrialMetadata
@@ -14,6 +15,7 @@ action_client_ = ActionClient(node_, CoverageAction, "coverage_action")
 service_client_ = node_.create_client(GenerateMap, "map_gen/generate_map")
 metadata_pub_ = node_.create_publisher(TrialMetadata, "trial_metadata", 10)
 line_pub_ = node_.create_publisher(MarkerArray, "coverage_marker", 10)
+clock_ = Clock()
 
 inter_marker_ = Marker()
 inter_marker_.header.frame_id = "map"
@@ -43,7 +45,9 @@ max_alpha = 1.0
 random.seed(5563)
 
 for i in range(num_cycles):
+    start_time = clock_.now()
     node_.get_logger().info("Processing map {i+1}/{num_cycles}")
+
     trial_metadata = TrialMetadata()
 
     request = GenerateMap.Request()
@@ -122,6 +126,13 @@ for i in range(num_cycles):
         for i in range(len(result.region_order)):
             trial_metadata.num_nodes.append(len(result.intra_paths[result.region_order[i]].data))
         trial_metadata.num_regions = len(result.region_order)
+
+        end_time = clock_.now()
+        duration = Duration()
+        duration.sec = int((end_time - start_time).nanoseconds // 1e9)
+        duration.nanosec = int((end_time - start_time).nanoseconds % 1e9)
+        trial_metadata.duration = duration
+
         metadata_pub_.publish(trial_metadata)
     else:
         node_.get_logger().error("Action execution failed")
