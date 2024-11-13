@@ -16,6 +16,7 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3
     float cost = CGAL::squared_distance(points.point(0), points.point(1));
     return std::make_pair(path, cost);
   }
+
   write_problem(dist, output_path, is_inter_path);
   write_params(output_path);
   int result = system((lkh_path + " " + output_path + "/params.par").c_str());
@@ -52,7 +53,7 @@ void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::strin
 void LKHWrapper::write_params(std::string output_path)
 {
   std::ofstream param_file(output_path + "/params.par");
-  param_file << "PROBLEM_FILE = " << output_path <<"/problem.tsp \nOUTPUT_TOUR_FILE = " << output_path << "/result.txt \nPRECISION = 10\n";
+  param_file << "PROBLEM_FILE = " << output_path <<"/problem.tsp \nOUTPUT_TOUR_FILE = " << output_path << "/result.txt \nPRECISION = 10\n RUNS = 3 \n TRACE_LEVEL = 0 \n";
   param_file.close();
 };
 
