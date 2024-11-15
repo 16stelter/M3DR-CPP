@@ -128,7 +128,7 @@ for i in range(num_cycles):
         total_nodes = 0
         for i in range(len(result.region_order)):
             total_nodes += len(result.intra_paths[result.region_order[i]].data)
-            trial_metadata.num_nodes.append(len(result.intra_paths[result.region_order[i]].data))
+            trial_metadata.num_nodes.append(len(result.intra_paths[i].data))
         trial_metadata.num_regions = len(result.region_order)
         trial_metadata.total_nodes = total_nodes
 
