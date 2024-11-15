@@ -228,7 +228,7 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
         double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
         if(intersects_obstacle(points.point(i), points.point(j), obstacles))
         {
-          dist += 1000;
+          dist += 10000;
         }
         distance_matrix[i][j] = dist;
         distance_matrix[j][i] = dist;

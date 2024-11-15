@@ -35,7 +35,7 @@ delete_marker_.id = -1
 delete_marker_.ns = "line"
 delete_marker_.action = Marker.DELETEALL
 
-num_cycles = 1
+num_cycles = 100
 min_slope = 20
 max_slope = 45
 smoothing_it = 3

@@ -30,7 +30,7 @@ void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::strin
   if (!problem_file.is_open()) {
     std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
   }
-	problem_file << "NAME: TSP\nTYPE: TSP\nDIMENSION: " << dist.size() << "\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\n SCALE: 100000\nEDGE_WEIGHT_SECTION\n";
+	problem_file << "NAME: TSP\nTYPE: TSP\nDIMENSION: " << dist.size() << "\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\n SCALE: 1000000\nEDGE_WEIGHT_SECTION\n";
 	for (size_t i = 0; i < dist.size(); i++) {
 	  for (size_t j = 0; j < dist[i].size(); j++) {
 		problem_file << dist[i][j] << " ";
@@ -69,7 +69,7 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::result_to_pointset(CGAL::
   while (std::getline(result_file, line)) {
     if (line.find("Length") != std::string::npos) 
     {
-      cost = std::stof(line.substr(line.find('=') + 1))/100000; //using scale 100000 to include the decimals in LKH so need to divide through 100000 here
+      cost = std::stof(line.substr(line.find('=') + 1))/1000000; //using scale 1000000 to include the decimals in LKH so need to divide through 1000000 here
     }
     else if (line.find("TOUR_SECTION") != std::string::npos) 
     {
