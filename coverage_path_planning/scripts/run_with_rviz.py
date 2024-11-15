@@ -35,25 +35,26 @@ delete_marker_.id = -1
 delete_marker_.ns = "line"
 delete_marker_.action = Marker.DELETEALL
 
-num_cycles = 10
-min_slope = 15
+num_cycles = 1
+min_slope = 20
 max_slope = 45
 smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
 
-random.seed(5563)
+seed = 63293
+random.seed(seed)
 
 for i in range(num_cycles):
     start_time = clock_.now()
-    node_.get_logger().info("Processing map {i+1}/{num_cycles}")
+    node_.get_logger().info(f"Processing map {i+1}/{num_cycles}")
 
     trial_metadata = TrialMetadata()
 
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
-    request.seed = i
-    request.size = 25
+    request.seed = i+seed
+    request.size = 10
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -76,6 +77,7 @@ for i in range(num_cycles):
 
     goal = CoverageAction.Goal()
     goal.map_filepath = "./output.stl"
+    goal.runs = 3
 
     action_client_.wait_for_server()
     node_.get_logger().info("Sending CoveragePathPlanning request...")
@@ -123,9 +125,12 @@ for i in range(num_cycles):
         trial_metadata.inter_cost = result.inter_cost
         trial_metadata.intra_costs = result.intra_costs
         trial_metadata.total_cost = result.total_cost
+        total_nodes = 0
         for i in range(len(result.region_order)):
+            total_nodes += len(result.intra_paths[result.region_order[i]].data)
             trial_metadata.num_nodes.append(len(result.intra_paths[result.region_order[i]].data))
         trial_metadata.num_regions = len(result.region_order)
+        trial_metadata.total_nodes = total_nodes
 
         end_time = clock_.now()
         duration = Duration()
@@ -134,6 +139,7 @@ for i in range(num_cycles):
         trial_metadata.duration = duration
 
         metadata_pub_.publish(trial_metadata)
+        node_.get_logger().info(f"Finished trial with  {total_nodes} nodes.")
     else:
         node_.get_logger().error("Action execution failed")
 

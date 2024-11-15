@@ -44,6 +44,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<CoverageAction::Feedback>();
     auto result = std::make_shared<CoverageAction::Result>();
+    int runs = goal->runs;
 
     Mesh mesh = stl_to_mesh(goal->map_filepath, goal->reduction_factor); 
     RCLCPP_INFO(node_->get_logger(), "Mesh Vertices: %d", mesh.number_of_vertices());
@@ -63,11 +64,10 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     std::vector<CGAL::Point_set_3<Point>> intra_paths;
     std::vector<float> intra_costs;
     
-    
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path);
+      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path, runs);
       intra_paths.push_back(path);
       intra_costs.push_back(cost);
       bool first = true;
@@ -92,7 +92,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     result->intra_costs = intra_costs;
 
     std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
-    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path, true);
+    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path, runs, true);
     Point p1;
     int count = 0;
     for (Point p : inter_path.points())
@@ -228,7 +228,7 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
         double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
         if(intersects_obstacle(points.point(i), points.point(j), obstacles))
         {
-          dist += 100000;
+          dist += 1000;
         }
         distance_matrix[i][j] = dist;
         distance_matrix[j][i] = dist;

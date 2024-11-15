@@ -1,6 +1,7 @@
 # Goal
 string map_filepath
 float32 reduction_factor
+int32 runs
 int32 debug_mode
 
 ---

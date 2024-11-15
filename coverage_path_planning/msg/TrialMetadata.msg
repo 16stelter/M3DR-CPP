@@ -4,6 +4,7 @@ float32 max_slope
 int32 smoothing_iterations
 float32 smoothing_alpha
 int32[] num_nodes
+int32 total_nodes
 int32 num_regions
 float32 inter_cost
 float32[] intra_costs
