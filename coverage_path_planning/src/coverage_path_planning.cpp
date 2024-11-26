@@ -67,7 +67,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     for (std::vector<Mesh::Face_index> c : components) {
       CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path, runs);
+      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
       intra_paths.push_back(path);
       intra_costs.push_back(cost);
       bool first = true;

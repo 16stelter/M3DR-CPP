@@ -20,7 +20,7 @@ clock_ = Clock()
 inter_marker_ = Marker()
 inter_marker_.header.frame_id = "map"
 inter_marker_.ns = "line"
-inter_marker_.id = 0
+inter_marker_.id = 1
 inter_marker_.type = Marker.LINE_LIST
 inter_marker_.action = Marker.ADD
 inter_marker_.pose.orientation.w = 1.0
@@ -35,14 +35,14 @@ delete_marker_.id = -1
 delete_marker_.ns = "line"
 delete_marker_.action = Marker.DELETEALL
 
-num_cycles = 100
+num_cycles = 1
 min_slope = 20
 max_slope = 45
 smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
 
-seed = 63293
+seed = 12345
 random.seed(seed)
 
 for i in range(num_cycles):
@@ -54,7 +54,7 @@ for i in range(num_cycles):
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
     request.seed = i+seed
-    request.size = 10
+    request.size = 25
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -108,7 +108,7 @@ for i in range(num_cycles):
             intra_marker_ = Marker()
             intra_marker_.header.frame_id = "map"
             intra_marker_.ns = "line"
-            intra_marker_.id = r+1 # start at id 1 because id 0 is inter region
+            intra_marker_.id = r+2 # start at id 2 because id 1 is inter region
             intra_marker_.type = Marker.LINE_STRIP
             intra_marker_.action = Marker.ADD
             intra_marker_.pose.orientation.w = 1.0
@@ -120,6 +120,24 @@ for i in range(num_cycles):
             for p in result.intra_paths[r].data:
                 intra_marker_.points.append(p)
             marker_array.markers.append(intra_marker_)
+
+        #map_marker = Marker()
+        #map_marker.header.frame_id = "map"
+        #map_marker.ns = "line"
+        #map_marker.id = 0
+        #map_marker.type = Marker.MESH_RESOURCE
+        #map_marker.action = Marker.ADD
+        #map_marker.mesh_resource = 'file:///home/sebi/Studium/PhD/ros2ws/output.stl'
+        #map_marker.scale.x = 1.0
+        #map_marker.scale.y = 1.0
+        #map_marker.scale.z = 1.0
+        #map_marker.color.a = 1.0
+        #map_marker.color.r = 0.8
+        #map_marker.color.g = 0.8
+        #map_marker.color.b = 0.8
+        #map_marker.pose.position.z = -0.2
+        #marker_array.markers.append(map_marker)
+
         line_pub_.publish(marker_array)
 
         trial_metadata.inter_cost = result.inter_cost

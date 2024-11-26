@@ -43,6 +43,7 @@ add_compile_options(-Wall -Werror -Wno-unused -fPIC)
 set(SOURCES
   src/coverage_path_planning.cpp
   src/LKHWrapper.cpp
+  src/GTSPME.cpp
 )
 
 add_executable(CoveragePathPlanning ${SOURCES})
