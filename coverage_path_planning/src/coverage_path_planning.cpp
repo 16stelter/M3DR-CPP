@@ -92,7 +92,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     result->intra_costs = intra_costs;
 
     std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
-    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.11/LKH", package_path, runs, true);
+    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs, true);
     Point p1;
     int count = 0;
     for (Point p : inter_path.points())
