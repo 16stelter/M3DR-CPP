@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from builtin_interfaces.msg import Duration
 from rclpy.node import Node
@@ -54,7 +55,7 @@ for i in range(num_cycles):
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
     request.seed = i+seed
-    request.size = 25
+    request.size = 5
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
