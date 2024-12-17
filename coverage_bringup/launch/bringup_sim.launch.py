@@ -13,7 +13,7 @@ def generate_launch_description():
 
     sim_world = DeclareLaunchArgument(
         "sim_world",
-        default_value=os.path.join(gazebo_path, "worlds", "map_gen_dummy.sdf"),
+        default_value=os.path.join(gazebo_path, "worlds", "empty.sdf"),
         description="Path to the Gazebo world file",
     )
 
@@ -45,11 +45,19 @@ def generate_launch_description():
         output="screen",
     )
 
+    supervisor_controller = Node(
+        package="coverage_bringup",
+        executable="supervisor_controller.py",
+        name="supervisor_controller",
+        output="screen"
+    )
+
     
     ld.add_action(sim_world)
     ld.add_action(coverage_node)
     ld.add_action(map_gen_node)
     ld.add_action(simulator)
     ld.add_action(navigator)
+    ld.add_action(supervisor_controller)
 
     return ld
