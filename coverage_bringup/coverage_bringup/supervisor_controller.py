@@ -8,6 +8,8 @@ from coverage_bringup.action import SimulateMapAction
 from ros_gz_interfaces.srv import ControlWorld, SpawnEntity, DeleteEntity, SetEntityPose
 from map_gen.srv import GenerateMap
 from coverage_path_planning.action import CoverageAction
+from ament_index_python.packages import get_package_share_directory
+import os
 
 
 
@@ -18,6 +20,8 @@ class supervisor_controller(Node):
         ns = self.get_namespace()
         if ns == "/":
             ns = ""
+
+        self.iteration_count = 0
 
         self._action_server = ActionServer(
             self,
@@ -50,7 +54,7 @@ class supervisor_controller(Node):
         # Call the map generation service
         self.map_gen_client_.wait_for_service()
         request = GenerateMap.Request()
-        request.file_path = self.goal_.map_filepath
+        request.file_path = os.path.splitext(self.goal_.map_filepath)[0] + str(self.iteration_count) + ".stl"
         request.seed = self.goal_.seed
         request.size = self.goal_.size
         request.max_slope = self.goal_.max_slope
@@ -61,7 +65,7 @@ class supervisor_controller(Node):
         # Call the coverage action
         self.coverage_client_.wait_for_server()
         coverage_goal = CoverageAction.Goal()
-        coverage_goal.map_filepath = self.goal_.map_filepath
+        coverage_goal.map_filepath = os.path.splitext(self.goal_.map_filepath)[0] + str(self.iteration_count) + ".stl"
         coverage_goal.runs = 3
         goal_future = self.coverage_client_.send_goal_async(coverage_goal)
         rclpy.spin_until_future_complete(self.node_, goal_future)
@@ -70,9 +74,17 @@ class supervisor_controller(Node):
         coverage_path = result_future.result().result
         
         if coverage_path is not None:
-            self.node_.get_logger().info(f"Total path length: {coverage_path.total_cost}")
+            self.node_.get_logger().info(f"Executing path with total path length: {coverage_path.total_cost}")
 
             self.publish_rviz_markers(coverage_path)
+
+            self.pause(reset=True)
+            self.remove_entity('ground_plane')
+            self.entity_reload_helper(os.path.splitext(self.goal_.map_filepath)[0], 'map_gen_dummy')
+
+            self.create_entity('ground_plane', 'map_gen_dummy')
+
+            self.iteration_count += 1
 
             response = self.execute_path(coverage_path)
 
@@ -96,6 +108,53 @@ class supervisor_controller(Node):
                 return 2
             rclpy.spin_once(self.node_)
         return 0
+    
+    def remove_entity(self, entity_name):
+        self.node_.get_logger().info(f"Removing entity {entity_name}")
+        request = DeleteEntity.Request()
+        request.entity.name = entity_name
+        request.entity.type = 2
+        future = self.remove_entity_client_.call_async(request)
+        rclpy.spin_until_future_complete(self.node_, future)
+        return 0
+    
+    def create_entity(self, entity_name, sdf_filename):
+        self.node_.get_logger().info(f"Spawning entity {entity_name} ({sdf_filename})")
+        request = SpawnEntity.Request()
+        request.entity_factory.name = entity_name
+        request.entity_factory.sdf_filename = sdf_filename + str(self.iteration_count) + ".sdf"
+        future = self.spawn_entity_client_.call_async(request)
+        rclpy.spin_until_future_complete(self.node_, future)
+        return 0
+    
+    def set_entity_pose(self, entity_name, x, y, z):
+        return 0
+    
+    def pause(self, reset=False):
+        self.node_.get_logger().info("Pausing simulation")
+        request = ControlWorld.Request()
+        request.world_control.pause = True
+        request.world_control.reset.model_only = reset
+        request.world_control.step = True
+        future = self.control_world_client_.call_async(request)
+        rclpy.spin_until_future_complete(self.node_, future)
+        return 0
+    
+    def unpause(self):
+        return 0
+
+    def entity_reload_helper(self, stl_filepath, sdf_filename):
+        sandbox_path = get_package_share_directory('ros2_gazebo_sandbox')
+        if self.iteration_count > 0:
+            os.remove(f"{sandbox_path}/worlds/{sdf_filename}{self.iteration_count-1}.sdf")
+            os.remove(f"{stl_filepath}{self.iteration_count-1}.stl")
+        with open(f"{sandbox_path}/worlds/{sdf_filename}.sdf", 'r') as f:
+            template = f.read()
+
+        content = template.replace("{stl_path}", f"{os.path.basename(stl_filepath)}{self.iteration_count}.stl")
+        with open(f"{sandbox_path}/worlds/{sdf_filename}{self.iteration_count}.sdf", 'w') as f:
+            f.write(content)
+
 
 def main(args=None):
     rclpy.init(args=args)
