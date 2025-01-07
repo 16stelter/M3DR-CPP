@@ -11,7 +11,7 @@
 
   <depend>coverage_path_planning</depend>
   <depend>map_gen</depend>
-  <depend>navigator</depend>
+  <depend>spline_navigator</depend>
   <depend>ros2_gazebo_sandbox</depend>
 
   <member_of_group>rosidl_interface_packages</member_of_group>

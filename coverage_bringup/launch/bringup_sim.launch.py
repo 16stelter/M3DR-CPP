@@ -39,7 +39,7 @@ def generate_launch_description():
     )
 
     navigator = Node(
-        package="navigator",
+        package="spline_navigator",
         executable="navigator.py",
         name="navigator",
         output="screen",
