@@ -10,6 +10,7 @@ from ros_gz_interfaces.srv import ControlWorld, SpawnEntity, DeleteEntity, SetEn
 from map_gen.srv import GenerateMap
 from coverage_path_planning.action import CoverageAction
 from ament_index_python.packages import get_package_share_directory
+from visualization_msgs.msg import Marker, MarkerArray
 import os, time
 
 
@@ -39,6 +40,9 @@ class supervisor_controller(Node):
         self.map_gen_client_ = self.create_client(GenerateMap, f"{ns}/map_gen/generate_map")
         self.coverage_client_ = ActionClient(self, CoverageAction, f"{ns}/coverage_action")
         self.nav_client_ = ActionClient(self, NavigatePath, f"{ns}/navigate_path")
+
+        self.line_pub_ = self.create_publisher(MarkerArray, "coverage_marker", 10)
+
 
         self.get_logger().info("Supervisor controller initialized")
 
@@ -76,6 +80,7 @@ class supervisor_controller(Node):
         
         if coverage_path is not None:
             self.get_logger().info(f"Executing path with total path length: {coverage_path.total_cost}")
+            self.get_logger().info(f"Total regions: {len(coverage_path.region_order)}")
 
             self.publish_rviz_markers(coverage_path)
 
@@ -100,6 +105,51 @@ class supervisor_controller(Node):
 
 
     def publish_rviz_markers(self, coverage_path):
+
+        inter_marker_ = Marker()
+        inter_marker_.header.frame_id = "odom"
+        inter_marker_.ns = "line"
+        inter_marker_.id = 1
+        inter_marker_.type = Marker.LINE_LIST
+        inter_marker_.action = Marker.ADD
+        inter_marker_.pose.orientation.w = 1.0
+        inter_marker_.scale.x = 0.05
+        inter_marker_.color.r = 1.0
+        inter_marker_.color.g = 0.0
+        inter_marker_.color.b = 0.0
+        inter_marker_.color.a = 1.0
+
+        delete_marker_ = Marker()
+        delete_marker_.id = -1
+        delete_marker_.header.frame_id = "odom"
+        delete_marker_.ns = "line"
+        delete_marker_.action = Marker.DELETEALL
+
+        marker_array = MarkerArray()
+        marker_array.markers.append(delete_marker_)
+        self.line_pub_.publish(marker_array)
+        marker_array = MarkerArray()
+        inter_marker_.points = []
+        for p in range(1, len(coverage_path.inter_path)-1):
+            inter_marker_.points.append(coverage_path.inter_path[p])
+        marker_array.markers.append(inter_marker_)
+        for r in range(len(coverage_path.intra_paths)):
+            intra_marker = Marker()
+            intra_marker.header.frame_id = "odom"
+            intra_marker.ns = "line"
+            intra_marker.id = r+2
+            intra_marker.type = Marker.LINE_STRIP
+            intra_marker.action = Marker.ADD
+            intra_marker.pose.orientation.w = 1.0
+            intra_marker.scale.x = 0.05
+            intra_marker.color.r = 0.0
+            intra_marker.color.g = 0.0
+            intra_marker.color.b = 1.0
+            intra_marker.color.a = 1.0
+            for p in coverage_path.intra_paths[r].data:
+                intra_marker.points.append(p)
+            marker_array.markers.append(intra_marker)
+        self.line_pub_.publish(marker_array)
         return 0
 
     def execute_path(self, coverage_path):
