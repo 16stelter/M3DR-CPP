@@ -41,7 +41,7 @@ class supervisor_controller(Node):
         self.coverage_client_ = ActionClient(self, CoverageAction, f"{ns}/coverage_action")
         self.nav_client_ = ActionClient(self, NavigatePath, f"{ns}/navigate_path")
 
-        self.line_pub_ = self.create_publisher(MarkerArray, "coverage_marker", 10)
+        self.line_pub_ = self.create_publisher(MarkerArray, f"{ns}/coverage_marker", 10)
 
 
         self.get_logger().info("Supervisor controller initialized")
@@ -107,7 +107,7 @@ class supervisor_controller(Node):
     def publish_rviz_markers(self, coverage_path):
 
         inter_marker_ = Marker()
-        inter_marker_.header.frame_id = "odom"
+        inter_marker_.header.frame_id = "world"
         inter_marker_.ns = "line"
         inter_marker_.id = 1
         inter_marker_.type = Marker.LINE_LIST
@@ -121,7 +121,7 @@ class supervisor_controller(Node):
 
         delete_marker_ = Marker()
         delete_marker_.id = -1
-        delete_marker_.header.frame_id = "odom"
+        delete_marker_.header.frame_id = "world"
         delete_marker_.ns = "line"
         delete_marker_.action = Marker.DELETEALL
 
@@ -135,7 +135,7 @@ class supervisor_controller(Node):
         marker_array.markers.append(inter_marker_)
         for r in range(len(coverage_path.intra_paths)):
             intra_marker = Marker()
-            intra_marker.header.frame_id = "odom"
+            intra_marker.header.frame_id = "world"
             intra_marker.ns = "line"
             intra_marker.id = r+2
             intra_marker.type = Marker.LINE_STRIP
