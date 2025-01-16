@@ -25,6 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(
   PROGRAMS
   coverage_bringup/supervisor_controller.py
