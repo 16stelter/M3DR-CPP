@@ -21,7 +21,7 @@ clock_ = Clock()
 inter_marker_ = Marker()
 inter_marker_.header.frame_id = "map"
 inter_marker_.ns = "line"
-inter_marker_.id = 1
+inter_marker_.id = 2
 inter_marker_.type = Marker.LINE_LIST
 inter_marker_.action = Marker.ADD
 inter_marker_.pose.orientation.w = 1.0
@@ -38,12 +38,12 @@ delete_marker_.action = Marker.DELETEALL
 
 num_cycles = 1
 min_slope = 20
-max_slope = 45
+max_slope = 30
 smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
 
-seed = 12345
+seed = 1000
 random.seed(seed)
 
 for i in range(num_cycles):
@@ -55,7 +55,7 @@ for i in range(num_cycles):
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
     request.seed = i+seed
-    request.size = 5
+    request.size = 10
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -109,7 +109,7 @@ for i in range(num_cycles):
             intra_marker_ = Marker()
             intra_marker_.header.frame_id = "map"
             intra_marker_.ns = "line"
-            intra_marker_.id = r+2 # start at id 2 because id 1 is inter region
+            intra_marker_.id = r+3 # start at id 3 because id 2 is inter region
             intra_marker_.type = Marker.LINE_STRIP
             intra_marker_.action = Marker.ADD
             intra_marker_.pose.orientation.w = 1.0
@@ -122,22 +122,41 @@ for i in range(num_cycles):
                 intra_marker_.points.append(p)
             marker_array.markers.append(intra_marker_)
 
-        #map_marker = Marker()
-        #map_marker.header.frame_id = "map"
-        #map_marker.ns = "line"
-        #map_marker.id = 0
-        #map_marker.type = Marker.MESH_RESOURCE
-        #map_marker.action = Marker.ADD
-        #map_marker.mesh_resource = 'file:///home/sebi/Studium/PhD/ros2ws/output.stl'
-        #map_marker.scale.x = 1.0
-        #map_marker.scale.y = 1.0
-        #map_marker.scale.z = 1.0
-        #map_marker.color.a = 1.0
-        #map_marker.color.r = 0.8
-        #map_marker.color.g = 0.8
-        #map_marker.color.b = 0.8
-        #map_marker.pose.position.z = -0.2
-        #marker_array.markers.append(map_marker)
+        # show the stl
+        map_marker = Marker()
+        map_marker.header.frame_id = "map"
+        map_marker.ns = "line"
+        map_marker.id = 0
+        map_marker.type = Marker.MESH_RESOURCE
+        map_marker.action = Marker.ADD
+        map_marker.mesh_resource = 'file:///home/sebi/Studium/PhD/ros2ws/output.stl'
+        map_marker.scale.x = 1.0
+        map_marker.scale.y = 1.0
+        map_marker.scale.z = 1.0
+        map_marker.color.a = 1.0
+        map_marker.color.r = 1.0
+        map_marker.color.g = 1.0
+        map_marker.color.b = 1.0
+        map_marker.pose.position.z = -0.15
+        marker_array.markers.append(map_marker)
+
+        # and show the obstacles in red
+        map_marker2 = Marker()
+        map_marker2.header.frame_id = "map"
+        map_marker2.ns = "line"
+        map_marker2.id = 1
+        map_marker2.type = Marker.MESH_RESOURCE
+        map_marker2.action = Marker.ADD
+        map_marker2.mesh_resource = 'file:///home/sebi/Studium/PhD/ros2ws/output.steep.stl'
+        map_marker2.scale.x = 1.0
+        map_marker2.scale.y = 1.0
+        map_marker2.scale.z = 1.0
+        map_marker2.color.a = 1.0
+        map_marker2.color.r = 1.0
+        map_marker2.color.g = 0.6
+        map_marker2.color.b = 0.6
+        map_marker2.pose.position.z = -0.1
+        marker_array.markers.append(map_marker2)
 
         line_pub_.publish(marker_array)
 

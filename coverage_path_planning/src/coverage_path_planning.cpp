@@ -133,14 +133,12 @@ Mesh CoveragePathPlanning::stl_to_mesh(std::string path, float reduction_factor)
   Mesh mesh;
   try 
   {
-    std::ifstream stl_file(path, std::ifstream::in);
-
-    CGAL::IO::read_STL(stl_file, mesh);
-    stl_file.close();
+    CGAL::IO::read_STL(path, mesh);
 
     RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
     if(reduction_factor > 0.0) // 0 is the default in a ros msg. If this is 0 we assume the user did not want mesh reduction.
     {
+      // find lowest z value
       double min_z = std::numeric_limits<double>::max();
       for (auto v : vertices(mesh)) {
           double z = mesh.point(v).z();
@@ -149,6 +147,7 @@ Mesh CoveragePathPlanning::stl_to_mesh(std::string path, float reduction_factor)
           }
       }
 
+      // remove bottom vertices
       Mesh::Halfedge_index  hr; 
       for (auto v : vertices(mesh)) {
         if(abs(mesh.point(v).z() - min_z) < 1e-2) // small tolerance so all bottom vertices are removed
@@ -228,7 +227,7 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
         double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
         if(intersects_obstacle(points.point(i), points.point(j), obstacles))
         {
-          dist += 10000;
+          dist += 1000000;
         }
         distance_matrix[i][j] = dist;
         distance_matrix[j][i] = dist;
