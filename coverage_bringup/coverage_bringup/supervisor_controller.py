@@ -59,6 +59,8 @@ class supervisor_controller(Node):
         # Call the map generation service
         self.map_gen_client_.wait_for_service()
         request = GenerateMap.Request()
+        request.in_file_path = self.goal_.in_filepath
+        request.in_file_reduction_factor = self.goal_.in_file_reduction_factor
         request.file_path = os.path.splitext(self.goal_.map_filepath)[0] + str(self.iteration_count) + ".stl"
         request.seed = self.goal_.seed
         request.size = self.goal_.size

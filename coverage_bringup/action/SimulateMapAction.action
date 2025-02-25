@@ -1,4 +1,6 @@
 # Goal
+string in_filepath
+float32 in_file_reduction_factor
 string map_filepath
 int32 seed
 int32 size

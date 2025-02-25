@@ -47,10 +47,10 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     int runs = goal->runs;
 
     Mesh mesh = stl_to_mesh(goal->map_filepath, goal->reduction_factor); 
-    RCLCPP_INFO(node_->get_logger(), "Mesh Vertices: %d", mesh.number_of_vertices());
     // add color map so we can show safe and obstacle triangles in different colors. 
     auto colormap = mesh.add_property_map<Mesh::Face_index, CGAL::Color>("f:color", CGAL::Color(255, 255, 255)).first;
 
+    RCLCPP_INFO(node_->get_logger(), "Reduced Faces: %d", mesh.number_of_faces());
     auto [fsafe, fobstacle] = face_safety(mesh, 15, colormap);
     Mesh msafe = get_sub_mesh(mesh, fsafe);
     Mesh mobstacle = get_sub_mesh(mesh, fobstacle);
@@ -135,7 +135,8 @@ Mesh CoveragePathPlanning::stl_to_mesh(std::string path, float reduction_factor)
   {
     CGAL::IO::read_STL(path, mesh);
 
-    RCLCPP_INFO(node_->get_logger(), "Nodes: %d", mesh.number_of_vertices());
+    RCLCPP_INFO(node_->get_logger(), "Vertices: %d", mesh.number_of_vertices());
+    RCLCPP_INFO(node_->get_logger(), "Faces: %d", mesh.number_of_faces());
     if(reduction_factor > 0.0) // 0 is the default in a ros msg. If this is 0 we assume the user did not want mesh reduction.
     {
       // find lowest z value

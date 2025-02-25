@@ -25,7 +25,7 @@ inter_marker_.id = 2
 inter_marker_.type = Marker.LINE_LIST
 inter_marker_.action = Marker.ADD
 inter_marker_.pose.orientation.w = 1.0
-inter_marker_.scale.x = 0.05
+inter_marker_.scale.x = 0.3
 inter_marker_.color.r = 1.0
 inter_marker_.color.g = 0.0
 inter_marker_.color.b = 0.0
@@ -38,7 +38,7 @@ delete_marker_.action = Marker.DELETEALL
 
 num_cycles = 1
 min_slope = 20
-max_slope = 30
+max_slope = 45
 smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
@@ -55,7 +55,7 @@ for i in range(num_cycles):
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
     request.seed = i+seed
-    request.size = 10
+    request.size = 25
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -113,7 +113,7 @@ for i in range(num_cycles):
             intra_marker_.type = Marker.LINE_STRIP
             intra_marker_.action = Marker.ADD
             intra_marker_.pose.orientation.w = 1.0
-            intra_marker_.scale.x = 0.05
+            intra_marker_.scale.x = 0.3
             intra_marker_.color.r = 0.0
             intra_marker_.color.g = 0.0
             intra_marker_.color.b = 1.0
