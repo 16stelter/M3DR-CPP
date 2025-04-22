@@ -5,8 +5,8 @@ slope and finds a complete coverage path by first solving the TSP in each region
 
 ## Requirements
 
-The solver expects the following software libraries to be available. Include them in the resources folder. Different versions of these libraries might work,
-but you need to change the CMakeList and parts of the source code in that case.
+The solver expects the following software libraries to be available. Different versions of these libraries might work,
+but you need to change the CMakeList and parts of the source code in that case. Some files for CGAL have been modified, the modified files are included in the resources folder. Simply add them to your CGAL installation.
 
 * CGAL-6.0
 * LKH-3.0.11
