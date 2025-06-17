@@ -1,12 +1,12 @@
 #include "coverage_path_planning/LKHWrapper.h"
 
-std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3<Point> points, std::vector<std::vector<double>> dist, std::string lkh_path, std::string output_path, int runs, bool is_inter_path)
+std::tuple<CGAL::Point_set_3<Point>, float, std::vector<int>> LKHWrapper::execute(CGAL::Point_set_3<Point> points, std::vector<std::vector<double>> dist, std::string lkh_path, std::string output_path, int runs, bool is_inter_path)
 {
   if(points.size() == 1)
   {
     CGAL::Point_set_3<Point> path;
     path.insert(points.point(0));
-    return std::make_pair(path, 0);
+    return std::make_tuple(path, 0, std::vector<int>());
   }
   else if(points.size() == 2)
   {
@@ -14,7 +14,7 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::execute(CGAL::Point_set_3
     path.insert(points.point(0));
     path.insert(points.point(1));
     float cost = dist[0][1];
-    return std::make_pair(path, cost);
+    return std::make_tuple(path, cost, std::vector<int>());
   }
 
   write_problem(dist, output_path, is_inter_path);
@@ -27,13 +27,14 @@ void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::strin
 {
   std::cerr << (output_path + "/problem.tsp");
 	std::ofstream problem_file(output_path + "/problem.tsp");
+  problem_file << std::fixed << std::setprecision(15);
   if (!problem_file.is_open()) {
     std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
   }
 	problem_file << "NAME: TSP\nTYPE: TSP\nDIMENSION: " << dist.size() << "\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\n SCALE: 1000000\nEDGE_WEIGHT_SECTION\n";
 	for (size_t i = 0; i < dist.size(); i++) {
 	  for (size_t j = 0; j < dist[i].size(); j++) {
-		problem_file << dist[i][j] << " ";
+		  problem_file << dist[i][j] << " ";
 	  }
 	  problem_file << "\n";
 	}
@@ -57,11 +58,12 @@ void LKHWrapper::write_params(std::string output_path, int runs)
   param_file.close();
 };
 
-std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::result_to_pointset(CGAL::Point_set_3<Point> points, std::string output_path)
+std::tuple<CGAL::Point_set_3<Point>, float, std::vector<int>> LKHWrapper::result_to_pointset(CGAL::Point_set_3<Point> points, std::string output_path)
 {
   std::ifstream result_file(output_path + "/result.txt");
 
   CGAL::Point_set_3<Point> path;
+  std::vector<int> order;
   std::string line;
   float cost = -std::numeric_limits<float>::infinity();
   bool tour_section = false;
@@ -87,21 +89,23 @@ std::pair<CGAL::Point_set_3<Point>, float> LKHWrapper::result_to_pointset(CGAL::
         if(p < static_cast<int>(points.size()))
         {
           path.insert(points.point(p));
+          order.push_back(p);
         }
         else
         {
           path.insert(p0);
+          order.push_back(-1);
         }
       }
     }
   }
-  path = shift_point_set(path, p0);
+  std::tie(path, order) = shift_point_set(path, p0, order);
 
   result_file.close();
-  return std::make_pair(path, cost);
+  return std::make_tuple(path, cost, order);
 };
 
-CGAL::Point_set_3<Point> LKHWrapper::shift_point_set(CGAL::Point_set_3<Point> point_set, Point target)
+std::tuple<CGAL::Point_set_3<Point>, std::vector<int>> LKHWrapper::shift_point_set(CGAL::Point_set_3<Point> point_set, Point target, std::vector<int>& order)
 {
   auto it = point_set.begin();
   for (; it != point_set.end(); ++it) {
@@ -112,12 +116,13 @@ CGAL::Point_set_3<Point> LKHWrapper::shift_point_set(CGAL::Point_set_3<Point> po
 
   if (it != point_set.end()) {
       std::rotate(point_set.begin(), it+1, point_set.end()); 
+      std::rotate(order.begin(), order.begin() + (it - point_set.begin() + 1), order.end());
   }
 
   if (!point_set.empty()) {
       point_set.remove(point_set.end()-1);
   }
 
-  return point_set;
+  return make_tuple(point_set, order);
 }
 

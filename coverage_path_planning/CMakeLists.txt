@@ -68,10 +68,6 @@ target_link_libraries(CoveragePathPlanning
 
 install(TARGETS CoveragePathPlanning DESTINATION lib/${PROJECT_NAME})
 
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
-install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
-
 install(DIRECTORY resources DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY scripts USE_SOURCE_PERMISSIONS

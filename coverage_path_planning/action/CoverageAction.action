@@ -3,12 +3,14 @@ string map_filepath
 float32 reduction_factor
 int32 runs
 int32 debug_mode
+bool use_global_tsp
 
 ---
 # Result
 bool success
 PointArr[] intra_paths
 geometry_msgs/Point[] inter_path
+bool[] make_red
 int32[] region_order
 float32[] intra_costs
 float32 inter_cost

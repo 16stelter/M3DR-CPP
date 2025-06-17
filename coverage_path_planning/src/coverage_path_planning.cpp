@@ -55,56 +55,86 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     Mesh msafe = get_sub_mesh(mesh, fsafe);
     Mesh mobstacle = get_sub_mesh(mesh, fobstacle);
     Mesh mobstacle2 = flatten_mesh(mobstacle); // set z = 0 to fake a 2d mesh (Mesh<Point_2> is not a TriangleMesh so doesn't work correctly)
-    std::vector<std::vector<Mesh::Face_index>> components = get_connected_components(msafe);
 
     CGAL::Graphics_scene scene;
     LKHWrapper lkh;
     CGAL::Point_set_3<Point> endpoints;
     std::string package_path = ament_index_cpp::get_package_share_directory("coverage_path_planning");
     std::vector<CGAL::Point_set_3<Point>> intra_paths;
+    CGAL::Point_set_3<Point> inter_path;
     std::vector<float> intra_costs;
-    
-    for (std::vector<Mesh::Face_index> c : components) {
-      CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
+    std::vector<bool> make_red;
+    float inter_cost = 0.0f;
+    if(goal->use_global_tsp)
+    {
+      CGAL::Point_set_3<Point> cen = get_centroids(mesh, fsafe);
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
-      auto [path, cost] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
+      auto [path, cost, order] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
       intra_paths.push_back(path);
-      intra_costs.push_back(cost);
-      bool first = true;
-      Point p1 = Point();
-      endpoints.insert(path.point(*path.begin()));
-      endpoints.insert(path.point(*(--path.end())));
-
-      for (Point p : path.points())
+      for(size_t i = 0; i < path.size()-1; i++)
       {
-        Point pz(p.x(), p.y(), p.z()+0.5);
-        if (first)
+        if(order[i] != -1 && order[i+1] != -1 && dist[order[i]][order[i+1]] >= 1000000)
         {
-          first = false;
-        }
+          cost -= 1000000;
+          make_red.push_back(true);
+        }     
         else
         {
-          scene.add_segment(p1, pz, CGAL::Color(0, 0, 255));
+          make_red.push_back(false);
+        }
+      }
+
+      intra_costs.push_back(cost);
+      inter_path.insert(path.point(*path.begin()));
+      inter_path.insert(path.point(*(--path.end())));
+      result->make_red = make_red;
+    }
+    else
+    {
+      std::vector<std::vector<Mesh::Face_index>> components = get_connected_components(msafe);
+      for (std::vector<Mesh::Face_index> c : components) {
+        CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
+        std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
+        auto [path, cost, order] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
+        intra_paths.push_back(path);
+        intra_costs.push_back(cost);
+        bool first = true;
+        Point p1 = Point();
+        endpoints.insert(path.point(*path.begin()));
+        endpoints.insert(path.point(*(--path.end())));
+
+        for (Point p : path.points())
+        {
+          Point pz(p.x(), p.y(), p.z()+0.5);
+          if (first)
+          {
+            first = false;
+          }
+          else
+          {
+            scene.add_segment(p1, pz, CGAL::Color(0, 0, 255));
+          }
+          p1 = pz;
+        }
+      }
+
+      std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
+      std::vector<int> order;
+      std::tie(inter_path, inter_cost, order) = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs, true);
+      Point p1;
+      int count = 0;
+      for (Point p : inter_path.points())
+      {
+        Point pz(p.x(), p.y(), p.z()+0.5);
+        if (!count == 0 && count % 2 == 0)
+        {
+            scene.add_segment(p1, pz, CGAL::Color(125, 0, 125));
         }
         p1 = pz;
+        count++;
       }
     }
     result->intra_costs = intra_costs;
-
-    std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
-    auto [inter_path, inter_cost] = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs, true);
-    Point p1;
-    int count = 0;
-    for (Point p : inter_path.points())
-    {
-      Point pz(p.x(), p.y(), p.z()+0.5);
-      if (!count == 0 && count % 2 == 0)
-      {
-          scene.add_segment(p1, pz, CGAL::Color(125, 0, 125));
-      }
-      p1 = pz;
-      count++;
-    }
     result->inter_cost = inter_cost;
     result->total_cost = std::accumulate(intra_costs.begin(), intra_costs.end(), 0.0f) + inter_cost;
 
@@ -116,9 +146,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     {
       CGAL::draw_graphics_scene(scene);
     }
-
     result = create_final_path(result, endpoints, inter_path, intra_paths);
-
     result->success = true;
     RCLCPP_INFO(node_->get_logger(), "Finished processing string: %s", goal->map_filepath.c_str());
     auto end_time = node_->now();
@@ -356,6 +384,7 @@ std::shared_ptr<coverage_path_planning::action::CoverageAction::Result> Coverage
       }
     }
   }
+
   std::vector<std::vector<geometry_msgs::msg::Point>> intra_p;
   for(int i = 0; i < static_cast<int>(intra_paths.size()); i++)
   {
