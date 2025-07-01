@@ -71,23 +71,28 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
       auto [path, cost, order] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
       intra_paths.push_back(path);
+      auto intra_cost = 0.0, inter_cost = 0.0, total_cost = 0.0;
       for(size_t i = 0; i < path.size()-1; i++)
       {
         if(order[i] != -1 && order[i+1] != -1 && dist[order[i]][order[i+1]] >= 1000000)
         {
-          cost -= 1000000;
           make_red.push_back(true);
+          inter_cost += (dist[order[i]][order[i+1]] - 1000000);
         }     
         else
         {
           make_red.push_back(false);
+          intra_cost += dist[order[i]][order[i+1]];
         }
       }
 
-      intra_costs.push_back(cost);
+      intra_costs.push_back(intra_cost);
       inter_path.insert(path.point(*path.begin()));
       inter_path.insert(path.point(*(--path.end())));
       result->make_red = make_red;
+      result->intra_costs = intra_costs;
+      result->inter_cost = inter_cost;
+      result->total_cost = intra_cost + inter_cost;
     }
     else
     {
@@ -133,10 +138,10 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
         p1 = pz;
         count++;
       }
+      result->intra_costs = intra_costs;
+      result->inter_cost = inter_cost;
+      result->total_cost = std::accumulate(intra_costs.begin(), intra_costs.end(), 0.0f) + inter_cost;
     }
-    result->intra_costs = intra_costs;
-    result->inter_cost = inter_cost;
-    result->total_cost = std::accumulate(intra_costs.begin(), intra_costs.end(), 0.0f) + inter_cost;
 
     if(goal->debug_mode == 2)
     {
