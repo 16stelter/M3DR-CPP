@@ -12,7 +12,7 @@ import random
 
 rclpy.init()
 node_ = Node("rviz_coverage")
-node_.declare_parameter("use_global_tsp", True)
+node_.declare_parameter("use_global_tsp", False)
 use_global_tsp = node_.get_parameter('use_global_tsp').get_parameter_value().bool_value
 action_client_ = ActionClient(node_, CoverageAction, "coverage_action")
 service_client_ = node_.create_client(GenerateMap, "map_gen/generate_map")
@@ -56,8 +56,8 @@ for i in range(num_cycles):
 
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
-    request.in_file_path = "./src/maps/mars_8S42W.stl"
-    request.in_file_reduction_factor = 0.005
+    #request.in_file_path = "./src/maps/mars_8S42W.stl"
+    #request.in_file_reduction_factor = 0.005
     request.seed = i+seed
     request.size = 25
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
