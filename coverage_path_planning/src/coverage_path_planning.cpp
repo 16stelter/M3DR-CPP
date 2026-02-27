@@ -68,7 +68,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
     if(goal->use_global_tsp)
     {
       CGAL::Point_set_3<Point> cen = get_centroids(mesh, fsafe);
-      std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
+      std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2, true);
       auto [path, cost, order] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
       intra_paths.push_back(path);
       auto intra_cost = 0.0, inter_cost = 0.0, total_cost = 0.0;
@@ -99,7 +99,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
       std::vector<std::vector<Mesh::Face_index>> components = get_connected_components(msafe);
       for (std::vector<Mesh::Face_index> c : components) {
         CGAL::Point_set_3<Point> cen = get_centroids(msafe, c);
-        std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2);
+        std::vector<std::vector<double>> dist = get_distance_matrix(cen, mobstacle2, false);
         auto [path, cost, order] = lkh.execute(cen, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs);
         intra_paths.push_back(path);
         intra_costs.push_back(cost);
@@ -125,7 +125,7 @@ void CoveragePathPlanning::execute(const std::shared_ptr<GoalHandleCoverageActio
 
       std::vector<std::vector<double>> dist = get_distance_matrix(endpoints);
       std::vector<int> order;
-      std::tie(inter_path, inter_cost, order) = lkh.execute(endpoints, dist, package_path + "/../../../lkh3/lib/lkh3/LKH", package_path, runs, true);
+      std::tie(inter_path, inter_cost, order) = lkh.execute(endpoints, dist, package_path + "/resources/LKH-3.0.13/LKH", package_path, runs, true);
       Point p1;
       int count = 0;
       for (Point p : inter_path.points())
@@ -251,7 +251,7 @@ Mesh CoveragePathPlanning::flatten_mesh(Mesh mesh3)
   return mesh2;
 }
 
-std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles)
+std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles, bool use_global_tsp)
 {
   std::vector<std::vector<double>> distance_matrix(points.size()+1, std::vector<double>(points.size()+1, 0));
 
@@ -261,7 +261,14 @@ std::vector<std::vector<double>> CoveragePathPlanning::get_distance_matrix(CGAL:
         double dist = std::sqrt(CGAL::squared_distance(points.point(i), points.point(j)));
         if(intersects_obstacle(points.point(i), points.point(j), obstacles))
         {
-          dist = 1000000;
+	  if(use_global_tsp)
+	  {
+	    dist += 1000000;
+	  }
+	  else
+	  {
+            dist = 1000000;
+	  }
         }
         distance_matrix[i][j] = dist;
         distance_matrix[j][i] = dist;

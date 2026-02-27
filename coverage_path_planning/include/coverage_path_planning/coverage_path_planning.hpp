@@ -100,10 +100,11 @@ class CoveragePathPlanning {
         * 
         * CGAL::Point_set_3<Point> points: Points to be connected
         * Mesh obstacles: Obstacles to be avoided
+	* Bool use_global_tsp: Whether this is a global TSP problem. If true, adds penalty to edges original value instead of replacing.
         * 
         * return: Distance matrix
         */
-        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles);
+        std::vector<std::vector<double>> get_distance_matrix(CGAL::Point_set_3<Point> points, Mesh obstacles, bool use_global_tsp);
 
         /*
         * Calculates the distance matrix for the inter region case. No obstacles, but the weight of subsequent pairs of points 
