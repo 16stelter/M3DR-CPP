@@ -27,7 +27,7 @@ void LKHWrapper::write_problem(std::vector<std::vector<double>> dist, std::strin
 {
   std::cerr << (output_path + "/problem.tsp");
 	std::ofstream problem_file(output_path + "/problem.tsp");
-  problem_file << std::fixed << std::setprecision(15);
+  problem_file << std::fixed;
   if (!problem_file.is_open()) {
     std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
   }
