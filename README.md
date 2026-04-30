@@ -25,9 +25,33 @@ The package contains a ros2 action server. You can start the server using
 
 You can send a request to the server using 
 
-```ros2 action send_goal /coverage_action coverage_path_planning/action/CoverageAction "{map_filepath: 'your_map_file.stl'}"```
+```ros2 action send_goal /coverage_action coverage_path_planning/action/CoverageAction "{map_filepath: 'your_map_file.stl', runs: 3}"```
+
+Number of runs influences how often LKH will recalculate the solution with different starting conditions. Higher number may slightly increase solution quality, but significantly increases calculation time.
 
 Additional parameters you can add to your request:
 
-debug_mode: 0 (default) - no debug, 1 - renders path only, 2 - renders path and mesh with region colors. Rendering is blocking execution until renderer closes.
-reduction_factor: 0.0 (default) - no mesh reduction, 0.0 < r < 1.0 - reduces number of triangles until the specified fraction remains.
+* debug_mode: 0 (default) - no debug, 1 - renders path only, 2 - renders path and mesh with region colors. Rendering is blocking execution until renderer closes.
+* reduction_factor: 0.0 (default) - no mesh reduction, 0.0 < r < 1.0 - reduces number of triangles until the specified fraction remains.
+* use_global_tsp: Overrides the proposed approach to instead consider the task as a single global TSP problem. Significantly increases calculation time.
+
+## Integration with Gazebo
+
+This package provides demo scripts to execute a coverage mission in gazebo. This has been tested on Ros2 Jazzy with Gazebo Harmomic. To run these demos, you require the following additional packages:
+
+* ros2-gz-sandbox: git@github.com:16stelter/ros2-gz-sandbox.git
+* simple_terrain_gen: git@github.com:16stelter/simple_terrain_gen.git
+
+To start the simulation, execute the following steps:
+
+* ```ros2 run map_gen MapGen```
+* ```ros2 run coverage_path_planning CoveragePathPlanning```
+* ```ros2 run coverage_path_planning purepursuit.py --ros-args -r __ns:=/multimodal -p cmd_vel_topic:=/cmd_vel_ground -p action_topic:=/follow_path_ground```
+* ```ros2 run coverage_path_planning flytogoal.py --ros-args -r __ns:=/multimodal -p cmd_vel_topic:=/cmd_vel_air```
+* ```ros2 run coverage_path_planning multimodal_coverage.py```
+* Copy the generated output.stl into the worlds folder of ros2-gz-sandbox
+* ```ros2 launch rl ros2_gz_sandbox sim_single.launch.py type:=multimodal robot_ns:=multimodal world_name:=output```
+* Adjust the position of the robot as indicated in your terminal. Make sure the robot is located close above the ground.
+* Unpause the simulation and confirm in the terminal.
+
+In a future version, this will be provided as a launch script. 
