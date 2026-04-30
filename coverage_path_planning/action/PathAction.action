@@ -1,0 +1,6 @@
+nav_msgs/Path goal_path
+float32 rotation_speed_limit
+---
+bool success
+---
+float32 progress

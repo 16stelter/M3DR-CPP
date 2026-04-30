@@ -15,6 +15,7 @@ set(CGAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/CGAL-6.0")
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(CGAL REQUIRED COMPONENTS Qt6)
@@ -28,8 +29,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PointArr.msg"
   "msg/TrialMetadata.msg"
   "action/CoverageAction.action"
+  "action/PathAction.action"
+  "action/FlightAction.action"
   DEPENDENCIES
   geometry_msgs
+  nav_msgs
 )
 
 include_directories(include 
@@ -52,6 +56,7 @@ ament_target_dependencies(
   ament_cmake
   rclcpp
   rclcpp_action
+  nav_msgs
   rosidl_default_runtime
   geometry_msgs
   ament_index_cpp

@@ -1,0 +1,10 @@
+float32 level
+float32 landing_height
+nav_msgs/Path goal_path
+float32 speed
+float32 rot_speed
+bool stay_enabled
+---
+bool success
+---
+float32 progress

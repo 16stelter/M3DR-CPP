@@ -11,6 +11,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclpy</depend>
+  <depend>cgal</depend>
   <depend>python3</depend>
   <depend>rosidl_default_generators</depend>
   <depend>rosidl_default_runtime</depend>

@@ -21,8 +21,8 @@ line_pub_ = node_.create_publisher(MarkerArray, "coverage_marker", 10)
 clock_ = Clock()
 
 inter_marker_ = Marker()
-inter_marker_.header.frame_id = "map"
-inter_marker_.ns = "line"
+inter_marker_.header.frame_id = "odom"
+inter_marker_.ns = "inter"
 inter_marker_.id = 2
 inter_marker_.type = Marker.LINE_LIST
 inter_marker_.action = Marker.ADD
@@ -35,17 +35,17 @@ inter_marker_.color.a = 1.0
 
 delete_marker_ = Marker()
 delete_marker_.id = -1
-delete_marker_.ns = "line"
+delete_marker_.ns = "inter"
 delete_marker_.action = Marker.DELETEALL
 
 num_cycles = 1
-min_slope = 20
-max_slope = 45
+min_slope = 20 #20
+max_slope = 45 #45
 smoothing_it = 3
 min_alpha = 0.0
 max_alpha = 1.0
 
-seed = 10070
+seed = 12346
 random.seed(seed)
 
 for i in range(num_cycles):
@@ -56,10 +56,10 @@ for i in range(num_cycles):
 
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
-    #request.in_file_path = "./src/maps/mars_8S42W.stl"
-    #request.in_file_reduction_factor = 0.005
+    request.in_file_path = "/home/sebastian/ros2ws/src/maps/mars_1N112W.stl"
+    request.in_file_reduction_factor = 0.005
     request.seed = i+seed
-    request.size = 25
+    request.size = 30
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -102,6 +102,13 @@ for i in range(num_cycles):
     result = result_future.result().result
     if result is not None:
         marker_array = MarkerArray()
+        delete_marker_.ns = "map"
+        marker_array.markers.append(delete_marker_)
+        delete_marker_.ns = "obstacle"
+        marker_array.markers.append(delete_marker_)
+        delete_marker_.ns = "inter"
+        marker_array.markers.append(delete_marker_)
+        delete_marker_.ns = "intra"
         marker_array.markers.append(delete_marker_)
         line_pub_.publish(marker_array)
         node_.get_logger().info("Action completed successfully")
@@ -110,10 +117,10 @@ for i in range(num_cycles):
         make_red = result.make_red
         if len(make_red) > 0:
             trial_metadata.total_nodes = len(result.intra_paths[0].data)
-            for p in range(len(result.intra_paths[0].data)-2):
+            for p in range(len(result.intra_paths[0].data)-1):
                 intra_marker_ = Marker()
-                intra_marker_.header.frame_id = "map"
-                intra_marker_.ns = "line"
+                intra_marker_.header.frame_id = "odom"
+                intra_marker_.ns = "intra"
                 intra_marker_.id = p+3 # start at id 3 because id 2 is inter region
                 intra_marker_.type = Marker.LINE_STRIP
                 intra_marker_.action = Marker.ADD
@@ -137,13 +144,15 @@ for i in range(num_cycles):
             marker_array.markers.append(inter_marker_)
             for r in range(len(result.intra_paths)):
                 intra_marker_ = Marker()
-                intra_marker_.header.frame_id = "map"
-                intra_marker_.ns = "line"
+                intra_marker_.header.frame_id = "odom"
+                intra_marker_.ns = "intra"
                 intra_marker_.id = r+3 # start at id 3 because id 2 is inter region
                 intra_marker_.type = Marker.LINE_STRIP
                 intra_marker_.action = Marker.ADD
                 intra_marker_.pose.orientation.w = 1.0
                 intra_marker_.scale.x = 3.0
+                intra_marker_.scale.y = 3.0
+                intra_marker_.scale.z = 3.0
                 intra_marker_.color.r = 0.0
                 intra_marker_.color.g = 0.0
                 intra_marker_.color.b = 1.0
@@ -154,8 +163,8 @@ for i in range(num_cycles):
 
         # show the stl
         map_marker = Marker()
-        map_marker.header.frame_id = "map"
-        map_marker.ns = "line"
+        map_marker.header.frame_id = "odom"
+        map_marker.ns = "map"
         map_marker.id = 0
         map_marker.type = Marker.MESH_RESOURCE
         map_marker.action = Marker.ADD
@@ -172,8 +181,8 @@ for i in range(num_cycles):
 
         # and show the obstacles in red
         map_marker2 = Marker()
-        map_marker2.header.frame_id = "map"
-        map_marker2.ns = "line"
+        map_marker2.header.frame_id = "odom"
+        map_marker2.ns = "obstacle"
         map_marker2.id = 1
         map_marker2.type = Marker.MESH_RESOURCE
         map_marker2.action = Marker.ADD
