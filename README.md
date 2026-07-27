@@ -13,9 +13,11 @@ but you need to change the CMakeList and parts of the source code in that case. 
 
 Also note, that the current scale and penalties that are set expect the LKH solver to be modified to accept long long int. If you do not want this, change all places in code that are set to a factor of 10 to a smaller factor instead. This will reduce accuracy and return costs that are slightly smaller than the actual costs. If you want to modify LKH to match this, the easiest (brute force) way to do so is going to the LKH SRC folder and executing
 
-```find . -type f -name ".c" -or -name ".h" | xargs sed -i 's/\bint\b/long long int/g'```
+```find . -type f \( -name "*.c" -o -name "*.h" \) | xargs sed -E -i 's/\bint\b(?! compare)/long long int/g'```
 
-Please be aware that this is not necessarily the smartest thing to do as this will replace every integer in the entire LKH library with a long long int. If you want to take the time, you can go through the code and only replace those integers that are relevant to the weights. That would result in a more performant solver. After making that replacement, you need to make LKH again.
+```find . -type f \( -name "*.c" -o -name "*.h" \) -print0 | xargs -0 sed -i 's/%d/%lld/g'```
+
+Please be aware that this is not necessarily the smartest thing to do as this will replace every integer in the entire LKH library with a long long int. If you want to take the time, you can go through the code and only replace those integers that are relevant to the weights. That would result in a more performant solver. After making that replacement, you need to make LKH again. Depending on your compiler, 
 
 ## How to use
 
