@@ -27,7 +27,7 @@ inter_marker_.id = 2
 inter_marker_.type = Marker.LINE_LIST
 inter_marker_.action = Marker.ADD
 inter_marker_.pose.orientation.w = 1.0
-inter_marker_.scale.x = 3.0
+inter_marker_.scale.x = 0.2
 inter_marker_.color.r = 1.0
 inter_marker_.color.g = 0.0
 inter_marker_.color.b = 0.0
@@ -56,10 +56,11 @@ for i in range(num_cycles):
 
     request = GenerateMap.Request()
     request.file_path = "./output.stl"
-    request.in_file_path = "/home/sebastian/ros2ws/src/maps/mars_1N112W.stl"
+    #request.in_file_path = ""
+    request.in_file_path = "/home/sebastian/pixiws/src/maps/mars_8S42W.stl"
     request.in_file_reduction_factor = 0.005
     request.seed = i+seed
-    request.size = 30
+    request.size = 10
     request.max_slope = min_slope + (max_slope - min_slope) * random.random()
     request.smoothing_iterations = smoothing_it
     request.smoothing_alpha = min_alpha + (max_alpha - min_alpha) * random.random()
@@ -150,9 +151,9 @@ for i in range(num_cycles):
                 intra_marker_.type = Marker.LINE_STRIP
                 intra_marker_.action = Marker.ADD
                 intra_marker_.pose.orientation.w = 1.0
-                intra_marker_.scale.x = 3.0
-                intra_marker_.scale.y = 3.0
-                intra_marker_.scale.z = 3.0
+                intra_marker_.scale.x = 0.2
+                intra_marker_.scale.y = 0.2
+                intra_marker_.scale.z = 0.2
                 intra_marker_.color.r = 0.0
                 intra_marker_.color.g = 0.0
                 intra_marker_.color.b = 1.0
@@ -168,7 +169,7 @@ for i in range(num_cycles):
         map_marker.id = 0
         map_marker.type = Marker.MESH_RESOURCE
         map_marker.action = Marker.ADD
-        map_marker.mesh_resource = 'file:///home/sebastian/ros2ws/output.stl'
+        map_marker.mesh_resource = 'file:///home/sebastian/pixiws/output.stl'
         map_marker.scale.x = 1.0
         map_marker.scale.y = 1.0
         map_marker.scale.z = 1.0
@@ -176,7 +177,7 @@ for i in range(num_cycles):
         map_marker.color.r = 1.0
         map_marker.color.g = 1.0
         map_marker.color.b = 1.0
-        map_marker.pose.position.z = -6.0
+        map_marker.pose.position.z = -1.0
         marker_array.markers.append(map_marker)
 
         # and show the obstacles in red
@@ -186,7 +187,7 @@ for i in range(num_cycles):
         map_marker2.id = 1
         map_marker2.type = Marker.MESH_RESOURCE
         map_marker2.action = Marker.ADD
-        map_marker2.mesh_resource = 'file:///home/sebastian/ros2ws/output.steep.stl'
+        map_marker2.mesh_resource = 'file:///home/sebastian/pixiws/output.steep.stl'
         map_marker2.scale.x = 1.0
         map_marker2.scale.y = 1.0
         map_marker2.scale.z = 1.0
@@ -194,7 +195,7 @@ for i in range(num_cycles):
         map_marker2.color.r = 1.0
         map_marker2.color.g = 0.6
         map_marker2.color.b = 0.6
-        map_marker2.pose.position.z = -3.0
+        map_marker2.pose.position.z = -0.5
         marker_array.markers.append(map_marker2)
 
         line_pub_.publish(marker_array)

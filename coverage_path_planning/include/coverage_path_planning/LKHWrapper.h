@@ -4,6 +4,7 @@
 #include <CGAL/Point_set_3.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <iostream>
+#include <iomanip>
 #include <cstdlib>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
