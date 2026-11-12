@@ -49,8 +49,7 @@ class CoveragePathPlanning {
         using CoverageAction = coverage_path_planning::action::CoverageAction;
         using GoalHandleCoverageAction = rclcpp_action::ServerGoalHandle<CoverageAction>;
 
-        explicit CoveragePathPlanning(rclcpp::Node::SharedPtr node, const std::string &ns = "",
-                 std::vector<rclcpp::Parameter> parameters = {});
+        explicit CoveragePathPlanning(rclcpp::Node::SharedPtr node);
     private:
         rclcpp::Node::SharedPtr node_;
         rclcpp_action::Server<CoverageAction>::SharedPtr action_server_;    

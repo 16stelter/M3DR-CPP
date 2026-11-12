@@ -3,9 +3,7 @@
 namespace PMP = CGAL::Polygon_mesh_processing;
 namespace coverage_path_planning {
 
-CoveragePathPlanning::CoveragePathPlanning(rclcpp::Node::SharedPtr node, 
-                                           const std::string &ns, 
-                                           std::vector<rclcpp::Parameter> parameters) 
+CoveragePathPlanning::CoveragePathPlanning(rclcpp::Node::SharedPtr node) 
 : node_(node)
 {
     action_server_ = rclcpp_action::create_server<CoverageAction>(
